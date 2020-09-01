@@ -1,0 +1,7 @@
+{
+  "extends": [
+    "prettier",
+    "prettier/@typescript-eslint",
+    "prettier/standard"
+  ]
+}

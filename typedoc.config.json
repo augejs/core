@@ -1,0 +1,6 @@
+{
+  "inputFiles": ["./src"],
+  "exclude": "**/*+(index|main|.spec|.test|.e2e).ts",
+  "mode": "modules",
+  "out": "apiDocs"
+}

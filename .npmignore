@@ -1,0 +1,20 @@
+# source
+**/*.ts
+*.ts
+
+# definitions
+!**/*.d.ts
+!*.d.ts
+
+# configuration
+package-lock.json
+tslint.json
+tsconfig.json
+.prettierrc
+
+docs/
+tsconfig.tsbuildinfo
+.editorconfig
+.eslintrc
+jest.config.js
+.github/
