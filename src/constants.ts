@@ -1,6 +1,7 @@
 export const ScanInputKeys = {
   Container: 'Container',
   ProcessArgs: 'ProcessArgs',
+  LifeCyclePhase: 'LifeCyclePhase',
 };
 
 export const ScanOutputKeys = {
@@ -8,6 +9,4 @@ export const ScanOutputKeys = {
   Instance: 'Instance',
   InstanceConfig: 'InstanceConfig',
   RuntimeConfig: 'RuntimeConfig',
-  StartUpHookTarget: 'StartUpHookTarget',
-  ShutDownHookTarget: 'ShutDownHookTarget',
 };

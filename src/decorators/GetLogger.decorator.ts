@@ -2,7 +2,7 @@ import { IScanNode, NameMetadata } from "@augejs/provider-scanner";
 import { ILogger, Logger } from "../logger";
 
 const noopObject = {};
-export function InjectLogger(context:string = ''):PropertyDecorator {
+export function GetLogger(context:string = ''):PropertyDecorator {
   return (target: Object, propertyKey: string | symbol) => {
     let memoizedName = `$memoized_${propertyKey.toString()}`;
     (target as any)[memoizedName] = noopObject;

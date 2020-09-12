@@ -18,3 +18,5 @@ tsconfig.tsbuildinfo
 .eslintrc
 jest.config.js
 .github/
+
+main.example.ts

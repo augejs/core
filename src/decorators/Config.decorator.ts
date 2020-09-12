@@ -8,11 +8,7 @@ export function Config (value:object):ClassDecorator {
 }
 
 Config.defineMetadata = (target: object, config: object)=> {
-  if (typeof config === 'function') {
-    Metadata.defineMetadata(Config, config, target);
-  } else {
-    Metadata.defineMergeObjectMetadata(Config, config, target);
-  }
+  Metadata.defineMergeObjectMetadata(Config, config, target);
 }
 
 Config.getMetadata = (target: object):object => {

@@ -8,7 +8,7 @@ const noopObject = {};
  * @param {string} [path='']
  * @returns {PropertyDecorator}
  */
-export function InjectConfig(path:string = '.'):PropertyDecorator {
+export function Value(path:string = '.'):PropertyDecorator {
   return (target: Object, propertyKey: string | symbol) => {
     let memoizedName = `$memoized_${propertyKey.toString()}`;
     (target as any)[memoizedName] = noopObject;

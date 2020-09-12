@@ -16,7 +16,7 @@ A Module is a container which can fill with kinds of providers.
 
 A Provider is a abstract concept. Maybe an Entity, a File, a structure, a component, a service, or a string.
 
-### How To Use
+### Usage
 ```javascript
 
 import { boot, Application } from '@augejs/module-core';

@@ -1,4 +1,3 @@
-
 import { IScanNode, Metadata } from '@augejs/provider-scanner';
 
 const noopLoader = (config:any) => config;

@@ -10,16 +10,20 @@ import { ILogger, Logger } from '../logger';
 const logger:ILogger = Logger.getLogger('App');
 
 type LifeCycleOptions = {
-  startupLifecycleNames: string[],
-  shutdownLifecycleNames: string[],
+  [lifeCyclePhase: string]: string[]
 }
 
 const DefaultLifeCycleConfig: LifeCycleOptions =
 {
-  startupLifecycleNames:  [
-    'onInit', 'onAppWillReady', '__onAppReady__', 'onAppDidReady'
+  startupLifecyclePhase:  [
+    'onInit', 'onAppWillReady', '__onAppReady__'
   ],
-  shutdownLifecycleNames: [
+
+  readyLifecyclePhase: [
+    'onAppDidReady',
+  ],
+
+  shutdownLifecyclePhase: [
     'onAppWillClose',
   ]
 };
@@ -57,10 +61,10 @@ function createInitEnvironmentHook(containerOptions:object):Function {
     // set for process args
     scanNode.context!.inputs.set(ScanInputKeys.ProcessArgs, argv);
 
+    scanNode.context!.inputs.set(ScanInputKeys.LifeCyclePhase, {});
+
     const runtimeConfig:object = {};
     scanNode.context!.outputs.set(ScanOutputKeys.RuntimeConfig, runtimeConfig);
-    scanNode.context!.outputs.set(ScanOutputKeys.StartUpHookTarget, {});
-    scanNode.context!.outputs.set(ScanOutputKeys.ShutDownHookTarget, {});
 
     await next();
 
@@ -70,44 +74,51 @@ function createInitEnvironmentHook(containerOptions:object):Function {
 
 function createLifeCycleHook(lifeCycleOptions:LifeCycleOptions):Function {
   return async function lifeCycleHook(scanNode: IScanNode, next: Function) {
+    const lifeCyclePhase:any = scanNode.context!.inputs.get(ScanInputKeys.LifeCyclePhase);
+    Object.keys(lifeCycleOptions).forEach((lifeCyclePhaseName: string) => {
+      lifeCyclePhase[lifeCyclePhaseName] = {};
+    });
+
     await next();
 
-    const { startupLifecycleNames, shutdownLifecycleNames } = lifeCycleOptions;
+    const lifeCyclePhasesHookMap:any = {};
+    Object.keys(lifeCycleOptions).forEach((lifeCyclePhaseName: string) => {
+      const lifeCycleNames:string[] = lifeCycleOptions[lifeCyclePhaseName];
+      const childrenHook:Function = hookUtil.sequenceHooks(lifeCycleNames.map((lifeCycleName:string) => {
+        return buildScanNodeInstanceLifeCycleHook(scanNode, lifeCycleName);
+      }));
+      const selfHook:Function = hookUtil.parallelHooks(HookMetadata.getMetadata(lifeCyclePhase[lifeCyclePhaseName]));
+      lifeCyclePhasesHookMap[lifeCyclePhaseName] = hookUtil.sequenceHooks([
+        childrenHook,
+        selfHook
+      ]);
+    });
 
     // startup
-    const startUpLifeCyclesHook:Function = hookUtil.sequenceHooks(startupLifecycleNames.map((lifeCycleName:string) => {
-      return buildScanNodeInstanceLifeCycleHook(scanNode, lifeCycleName);
-    }));
-
-    const startUpHookTarget:object = scanNode.context!.outputs.get(ScanOutputKeys.StartUpHookTarget);
-    const startUpSelfHook:Function = hookUtil.parallelHooks(HookMetadata.getMetadata(startUpHookTarget));
-    const startUpHook:Function = hookUtil.sequenceHooks([
-      startUpLifeCyclesHook,
-      startUpSelfHook
-    ]);
     try {
-      await startUpHook(scanNode);
+      await lifeCyclePhasesHookMap.startupLifecyclePhase(scanNode);
     } catch(err:any) {
       logger.error('StartUp Error \n' + err);
     }
+
+    // after startup
+    process.nextTick(()=>{
+      (async () => {
+        try {
+          await lifeCyclePhasesHookMap.readyLifecyclePhase(scanNode);
+        } catch(err:any) {
+          logger.error('StartUp Error \n' + err);
+        }
+      })();
+    });
+
     //shutdown
     // https://hackernoon.com/graceful-shutdown-in-nodejs-2f8f59d1c357
     // https://blog.risingstack.com/graceful-shutdown-node-js-kubernetes/
-
-    const shutDownLifeCyclesHook:Function = hookUtil.sequenceHooks(shutdownLifecycleNames.map((lifeCycleName:string) => {
-      return buildScanNodeInstanceLifeCycleHook(scanNode, lifeCycleName);
-    }));
-    const shutDownTarget:object = scanNode.context!.outputs.get(ScanOutputKeys.ShutDownHookTarget);
-    const shutDownSelfHook:Function = hookUtil.parallelHooks(HookMetadata.getMetadata(shutDownTarget));
-    const shutDownHook:Function = hookUtil.sequenceHooks([
-      shutDownLifeCyclesHook,
-      shutDownSelfHook
-    ]);
-
     process.on('exit', () => {
       (async () => {
         try {
-          await shutDownHook(scanNode);
+          await lifeCyclePhasesHookMap.shutdownLifecyclePhase(scanNode);
         } catch(err:any) {
           logger.error('ShutDown Error \n' + err);
         }

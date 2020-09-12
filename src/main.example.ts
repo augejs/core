@@ -1,17 +1,17 @@
-import { Application, Module, Config, InjectConfig , boot } from './main';
+import { Application, Module, Config, Value , boot } from './main';
 
 @Module()
 @Config({
   fullName: "1231313",
   hello: {
     name: 1,
-    ageL: 'asdadad',
+    age: 'asdadad',
     adadad: 'adadadad'
   }
 })
 class Module1 {
 
-  @InjectConfig('./hello')
+  @Value('./hello')
   testName!:string;
 
   async onInit() {
