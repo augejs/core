@@ -56,6 +56,7 @@ export class Logger implements ILogger {
   public static addTransport(transport: ILogTransport) {
     if (logTransports.includes(transport)) return;
     logTransports.push(transport);
+
     processQueueLogItems();
   }
 
@@ -69,6 +70,10 @@ export class Logger implements ILogger {
     logTransports.length = 0;
   }
 
+  public static getTransportCount(): number {
+    return logTransports.length;
+  }
+
   public static clear() {
     queueLogItems.length = 0;
   }
@@ -80,6 +85,7 @@ export class Logger implements ILogger {
       context: this.context,
       message,
       level: LogLevel.ERROR,
+      timestamp: Date.now(),
     });
   }
 
@@ -88,6 +94,7 @@ export class Logger implements ILogger {
       context: this.context,
       message,
       level: LogLevel.VERBOSE,
+      timestamp: Date.now(),
     });
   }
 
@@ -96,6 +103,7 @@ export class Logger implements ILogger {
       context: this.context,
       message,
       level: LogLevel.DEBUG,
+      timestamp: Date.now(),
     });
   }
 
@@ -104,6 +112,7 @@ export class Logger implements ILogger {
       context: this.context,
       message,
       level: LogLevel.INFO,
+      timestamp: Date.now(),
     });
   }
 
@@ -112,6 +121,7 @@ export class Logger implements ILogger {
       context: this.context,
       message,
       level: LogLevel.WARN,
+      timestamp: Date.now(),
     });
   }
 };

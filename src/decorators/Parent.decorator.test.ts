@@ -1,5 +1,5 @@
 import { Parent } from './Parent.decorator';
-import { ParentMetadata } from '@augejs/provider-scanner';
+
 describe('decorators: Parent.decorator.test', () => {
   it('Parent.decorator should have correct metadata', () => {
 
@@ -12,7 +12,7 @@ describe('decorators: Parent.decorator.test', () => {
       }
     ])
     class A {}
-    expect(ParentMetadata.getMetadata(A)).toEqual([
+    expect(Parent.getMetadata(A)).toEqual([
       {
         a: 1
       },

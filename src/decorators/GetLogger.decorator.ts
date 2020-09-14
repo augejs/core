@@ -1,5 +1,6 @@
-import { IScanNode, NameMetadata } from "@augejs/provider-scanner";
+import { NameMetadata } from '@augejs/provider-scanner';
 import { ILogger, Logger } from "../logger";
+import { IScanNode } from '../utils';
 
 const noopObject = {};
 export function GetLogger(context:string = ''):PropertyDecorator {
@@ -9,12 +10,13 @@ export function GetLogger(context:string = ''):PropertyDecorator {
 
     const descriptor:PropertyDescriptor = {
       get():ILogger {
-        if ((this as any)[memoizedName] === noopObject) {
-          const scanNode:IScanNode = (this as any).$scanNode;
+        const instance:any = this;
+        if (instance[memoizedName] === noopObject) {
+          const scanNode:IScanNode = instance.$scanNode;
           const logger:ILogger = Logger.getLogger(context || NameMetadata.getMetadata(scanNode.provider));
-          (this as any)[memoizedName] = logger;
+          instance[memoizedName] = logger;
         }
-        return (this as any)[memoizedName] as ILogger;
+        return instance[memoizedName] as ILogger;
       },
     };
 

@@ -1,6 +1,7 @@
-import { IScanNode, Metadata } from '@augejs/provider-scanner';
+import { Metadata } from '@augejs/provider-scanner';
+import { IScanNode } from '../utils';
 
-const noopLoader = (config:any) => config;
+const noopLoader = () => {};
 
 export function ConfigLoader (loader: (config:object, scanNode:IScanNode)=>Promise<object>):ClassDecorator {
   return function(target: Function) {

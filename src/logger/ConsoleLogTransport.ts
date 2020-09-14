@@ -1,7 +1,19 @@
 import { ILogItem, ILogTransport } from "./Logger.interface";
+import { LogLevel } from "./LogLevel";
 
 export class ConsoleLogTransport implements ILogTransport {
   printMessage(logItem:ILogItem) {
-    console.log(`[${logItem.level}] - ${logItem.context} ${logItem.message}`);
+    const methodNameMap = {
+      [LogLevel.VERBOSE]: 'debug',
+      [LogLevel.DEBUG]: 'debug',
+      [LogLevel.INFO]: 'info',
+      [LogLevel.WARN]: 'warn',
+      [LogLevel.ERROR]: 'error',
+    };
+
+    const methodName:string = methodNameMap[logItem.level];
+    if (!methodName) return;
+
+    (console as any)[methodName](`${new Date(logItem.timestamp).toISOString()} [${logItem.level}] - ${logItem.context} ${logItem.message}`);
   }
 }

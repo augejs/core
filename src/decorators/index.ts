@@ -1,4 +1,3 @@
-export * from './Application.decorator';
 export * from './Config.decorator';
 export * from './ConfigLoader.decorator';
 export * from './Value.decorator';
@@ -8,3 +7,6 @@ export * from './Parent.decorator';
 export * from './ScanHook.decorator';
 export * from './GetLogger.decorator';
 export * from './LifeCyclePhaseHook.decorator';
+export * from './ScanPriority.decorator';
+export * from './ChildrenHooksCompositeFunction.decorator';
+
