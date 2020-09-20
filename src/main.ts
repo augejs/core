@@ -6,6 +6,5 @@ export * from './utils';
 export {
   hookUtil,
   Metadata,
-  createScanNodeScanHook,
 } from '@augejs/provider-scanner';
 
