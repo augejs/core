@@ -141,7 +141,6 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
         })
       }
     ]),
-
     // scanNode level hooks.
     scanNodeScanHook: hookUtil.nestHooks([
       async function setupScanNodeDIHook(scanNode: IScanNode, next: Function) {
