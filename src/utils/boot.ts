@@ -1,5 +1,5 @@
 import { argv } from 'yargs';
-import { scan, IScanNode, IScanContext, hookUtil, HookMetadata, createScanNodeScanHook } from '@augejs/provider-scanner';
+import { scan, IScanNode, IScanContext, hookUtil, HookMetadata } from '@augejs/provider-scanner';
 import { getConfigAccessPath } from './config.util';
 import { objectPath, objectExtend } from './object.util';
 import { BindingScopeEnum, Container } from '../ioc';
@@ -55,7 +55,7 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
       },
 
       async function setupConfig(context: IScanContext, next: Function) {
-        await createScanNodeScanHook(context.rootScanNode!, async (scanNode: IScanNode, next: Function)=> {
+        await hookUtil.traverseTreeNodeHook(context.rootScanNode!, async (scanNode: IScanNode, next: Function)=> {
           await next();
           const configAccessPath:string = getConfigAccessPath(scanNode.namePaths);
           const globalConfig:object = scanNode.context.globalConfig;
