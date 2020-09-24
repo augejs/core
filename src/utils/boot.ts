@@ -1,5 +1,5 @@
 import { argv } from 'yargs';
-import { scan, IScanNode, IScanContext, hookUtil, HookMetadata } from '@augejs/provider-scanner';
+import { scan, IScanNode, IScanContext, hookUtil, HookMetadata, Metadata } from '@augejs/provider-scanner';
 import { getConfigAccessPath } from './config.util';
 import { objectPath, objectExtend } from './object.util';
 import { BindingScopeEnum, Container } from '../ioc';
@@ -51,6 +51,11 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
         Object.keys(lifeCyclePhases).forEach((lifeCyclePhaseName: string) => {
           context.lifeCyclePhaseNodes[lifeCyclePhaseName] = {};
         });
+
+        context.getScanNodeByProvider = (provider: object): IScanNode=> {
+          return Metadata.getMetadata(provider, provider) as IScanNode;
+        }
+
         await next();
       },
 
@@ -144,6 +149,7 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
     // scanNode level hooks.
     scanNodeScanHook: hookUtil.nestHooks([
       async function setupScanNodeDIHook(scanNode: IScanNode, next: Function) {
+        Metadata.defineMetadata(scanNode.provider, scanNode, scanNode.provider);
         const container:Container = scanNode.context.container;
 
         let instanceFactory:Function | null = null;
