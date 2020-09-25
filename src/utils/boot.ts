@@ -25,7 +25,7 @@ interface IBootOptions {
   containerOptions?: { [key: string]: any}
 }
 
-const logger:ILogger = Logger.getLogger('Boot');
+const logger:ILogger = Logger.getLogger('boot');
 
 export const boot = async (appModule:Function, options?:IBootOptions): Promise<IScanContext> => {
   const containerOptions = {
@@ -44,6 +44,14 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
   return await scan(appModule, {
     // context level hooks.
     contextScanHook: hookUtil.nestHooks([
+      async (context: IScanContext, next: Function)=> {
+        try {
+          await next();
+        } catch(err) {
+          logger.error(`boot Error \n  ${err} \n ${err?.stack}`);
+        }
+      },
+
       // setup the boot env
       async function setupEnv(context: IScanContext, next: Function) {
         // define context
@@ -114,12 +122,9 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
 
         Object.keys(lifeCyclePhases).forEach((lifeCyclePhaseName: string) => {
           const lifeCycleNames:string[] = lifeCyclePhases[lifeCyclePhaseName];
-
-          const childrenHook:Function = hookUtil.sequenceHooks(lifeCycleNames.map((lifeCycleName:string) => {
+          lifeCyclePhasesHookMap[lifeCyclePhaseName] = hookUtil.sequenceHooks(lifeCycleNames.map((lifeCycleName:string) => {
             return buildScanNodeInstanceLifeCycleHook(rootScanNode, lifeCycleName);
           }));
-
-          lifeCyclePhasesHookMap[lifeCyclePhaseName] = childrenHook;
         });
 
         // startup
@@ -133,11 +138,11 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
           (async () => {
             try {
               await lifeCyclePhasesHookMap.readyLifecyclePhase(rootScanNode);
-
               // if here there is no LogTransport, add ConsoleLogTransport as default.
               if (Logger.getTransportCount() === 0) {
                 Logger.addTransport(new ConsoleLogTransport());
               }
+              // logger.verbose('readyLifecyclePhase completed');
             } catch(err) {
               logger.error(`readyLifecyclePhase Error \n  ${err} \n ${err?.stack}`);
             }
@@ -218,18 +223,17 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
 };
 
 function buildScanNodeInstanceLifeCycleHook(scanNode: IScanNode, lifecycleName: string):Function {
-  let selfLifecycleInstHook:Function = hookUtil.noopHook;
-  let instance:any = scanNode.instance
-  if (instance) {
-    // bind the life cycle
-    if(typeof instance[lifecycleName] === 'function') {
-      selfLifecycleInstHook = (instance[lifecycleName] as Function).bind(instance);
-    }
-  }
-
+  const instance:any = scanNode.instance;
+  const hasLifecycleFunction: boolean = instance && typeof instance[lifecycleName] === 'function';
   const selfLifecycleHook: Function = hookUtil.nestHooks([
     ...HookMetadata.getMetadata(scanNode.lifeCycleNodes[lifecycleName]),
-    selfLifecycleInstHook,
+    async (scanNode: IScanNode, next:Function) => {
+      if (hasLifecycleFunction) {
+        // bind the life cycle
+        await instance[lifecycleName](scanNode);
+      }
+      await next();
+    }
   ]);
 
   // build the children life cycle
