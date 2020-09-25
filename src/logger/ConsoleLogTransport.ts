@@ -14,6 +14,8 @@ export class ConsoleLogTransport implements ILogTransport {
     const methodName:string = methodNameMap[logItem.level];
     if (!methodName) return;
 
-    (console as any)[methodName](`${new Date(logItem.timestamp).toISOString()} [${logItem.level}] - ${logItem.context} ${logItem.message}`);
+    const message: string = `${new Date(logItem.timestamp).toISOString()} [${logItem.context || '-'}] [${logItem.level}] - ${logItem.message}`;
+
+    (console as any)[methodName](message);
   }
 }
