@@ -37,6 +37,10 @@ class Module2 {
   async onInit() {
     this.logger.info('Module2 onInit');
   }
+
+  async __onAppReady__() {
+    this.logger.info('Module2 __onAppReady__');
+  }
 }
 
 @Module({

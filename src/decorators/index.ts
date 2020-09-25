@@ -7,5 +7,4 @@ export * from './Parent.decorator';
 export * from './ScanHook.decorator';
 export * from './GetLogger.decorator';
 export * from './LifecycleHook.decorator';
-export * from './ScanPriority.decorator';
 

@@ -10,7 +10,8 @@ export interface ILogItem {
   context: string
   message: any
   level: string
-  timestamp: number
+  timestamp: number,
+  [key: string]: any
 }
 
 export interface ILogTransport {
