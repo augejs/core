@@ -23,7 +23,6 @@ const DefaultLifeCyclePhases =
 
 interface IBootOptions {
   containerOptions?: { [key: string]: any}
-  lifeCyclePhases?: { [key: string]: string[]}
 }
 
 const logger:ILogger = Logger.getLogger('Boot');
@@ -36,39 +35,53 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
     ...(options?.containerOptions || {})
   };
 
-  const lifeCyclePhases = options?.lifeCyclePhases || DefaultLifeCyclePhases;
+  const lifeCyclePhases: {[key: string]: string[]} = DefaultLifeCyclePhases;
+  const lifeCycleNames: string[] = [];
+  Object.values(lifeCyclePhases).forEach((names: string[]) => {
+    lifeCycleNames.push(...names);
+  });
 
   return await scan(appModule, {
     // context level hooks.
     contextScanHook: hookUtil.nestHooks([
       // setup the boot env
-      async function setupEnvHook(context: IScanContext, next: Function) {
+      async function setupEnv(context: IScanContext, next: Function) {
+        // define context
         context.container = new Container(containerOptions);
         context.processArgv = argv;
+
+        // config
         context.globalConfig = {};
         objectExtend<object, object>(true, context.globalConfig, argv);
-        context.lifeCyclePhaseNodes = {};
-        Object.keys(lifeCyclePhases).forEach((lifeCyclePhaseName: string) => {
-          context.lifeCyclePhaseNodes[lifeCyclePhaseName] = {};
-        });
 
         context.getScanNodeByProvider = (provider: object): IScanNode=> {
           return Metadata.getMetadata(provider, provider) as IScanNode;
         }
+
+        await hookUtil.traverseTreeNodeHook(context.rootScanNode!, async (scanNode: IScanNode, next: Function)=> {
+          // bind the provider to scanNode.
+          Metadata.defineMetadata(scanNode.provider, scanNode, scanNode.provider);
+
+          // lifecycle
+          scanNode.lifeCycleNodes = {};
+          lifeCycleNames.forEach((lifeCycleName: string) => {
+            scanNode.lifeCycleNodes[lifeCycleName] = {};
+          });
+
+          scanNode.getConfig = (path?:string): any => {
+            const configAccessPath:string = getConfigAccessPath(scanNode.namePaths, path);
+            return objectPath.get(scanNode.context.globalConfig, configAccessPath);
+          }
+          await next();
+        })();
 
         await next();
       },
 
       async function setupConfig(context: IScanContext, next: Function) {
         await hookUtil.traverseTreeNodeHook(context.rootScanNode!, async (scanNode: IScanNode, next: Function)=> {
-          await next();
           const configAccessPath:string = getConfigAccessPath(scanNode.namePaths);
           const globalConfig:object = scanNode.context.globalConfig;
-          // helper to get config
-          scanNode.getConfig = (path?:string): any => {
-            const configAccessPath:string = getConfigAccessPath(scanNode.namePaths, path);
-            return objectPath.get(globalConfig, configAccessPath);
-          }
           // provide config.
           // https://www.npmjs.com/package/object-path
           let providerConfig:object = Config.getMetadata(scanNode.provider);
@@ -86,28 +99,27 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
           }
           // https://www.npmjs.com/package/extend
           objectPath.set<object>(globalConfig, configAccessPath, preProviderConfig);
-        })(context);
+
+          await next();
+        })();
         // the argv has highest priority
         objectExtend<object, object>(true, context.globalConfig, argv);
         await next();
       },
 
-      async function setupLfeCyclePhasesHook(context: IScanContext, next: Function) {
+      async function setupLifecycle(context: IScanContext, next: Function) {
         await next();
         const rootScanNode:IScanNode = context.rootScanNode!;
         const lifeCyclePhasesHookMap:{ [key: string]: Function} = {};
 
         Object.keys(lifeCyclePhases).forEach((lifeCyclePhaseName: string) => {
           const lifeCycleNames:string[] = lifeCyclePhases[lifeCyclePhaseName];
+
           const childrenHook:Function = hookUtil.sequenceHooks(lifeCycleNames.map((lifeCycleName:string) => {
             return buildScanNodeInstanceLifeCycleHook(rootScanNode, lifeCycleName);
           }));
 
-          const selfHook:Function = hookUtil.parallelHooks(HookMetadata.getMetadata(context.lifeCyclePhaseNodes[lifeCyclePhaseName]));
-          lifeCyclePhasesHookMap[lifeCyclePhaseName] = hookUtil.sequenceHooks([
-            childrenHook,
-            selfHook
-          ]);
+          lifeCyclePhasesHookMap[lifeCyclePhaseName] = childrenHook;
         });
 
         // startup
@@ -149,7 +161,6 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
     // scanNode level hooks.
     scanNodeScanHook: hookUtil.nestHooks([
       async function setupScanNodeDIHook(scanNode: IScanNode, next: Function) {
-        Metadata.defineMetadata(scanNode.provider, scanNode, scanNode.provider);
         const container:Container = scanNode.context.container;
 
         let instanceFactory:Function | null = null;
@@ -207,14 +218,19 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
 };
 
 function buildScanNodeInstanceLifeCycleHook(scanNode: IScanNode, lifecycleName: string):Function {
-  let selfLifeCycleHook:Function = hookUtil.noopHook;
+  let selfLifecycleInstHook:Function = hookUtil.noopHook;
   let instance:any = scanNode.instance
   if (instance) {
     // bind the life cycle
     if(typeof instance[lifecycleName] === 'function') {
-      selfLifeCycleHook = (instance[lifecycleName] as Function).bind(instance);
+      selfLifecycleInstHook = (instance[lifecycleName] as Function).bind(instance);
     }
   }
+
+  const selfLifecycleHook: Function = hookUtil.nestHooks([
+    ...HookMetadata.getMetadata(scanNode.lifeCycleNodes[lifecycleName]),
+    selfLifecycleInstHook,
+  ]);
 
   // build the children life cycle
   const childrenLifeCycleHook:Function = hookUtil.parallelHooks(
@@ -226,7 +242,7 @@ function buildScanNodeInstanceLifeCycleHook(scanNode: IScanNode, lifecycleName: 
   // children life cycle first
   return hookUtil.bindHookContext(scanNode, hookUtil.sequenceHooks([
     childrenLifeCycleHook,
-    selfLifeCycleHook,
+    selfLifecycleHook,
   ]));
 }
 
