@@ -3,19 +3,19 @@ import { Parent } from './Parent.decorator';
 import { Name } from './Name.decorator';
 import { Injectable } from '../ioc';
 
-export interface IModuleOptions {
+type ModuleOptions = {
   name?:string,
   providers?:any[],
   subModules?: any[],
 }
 
-export function Module(options?:IModuleOptions):ClassDecorator {
+export function Module(opts?:ModuleOptions):ClassDecorator {
   return function(target: Function) {
     Metadata.decorate([
-      Name(options?.name),
+      Name(opts?.name),
       Parent([
-        ...Array.isArray(options?.providers) ? options!.providers : [],
-        ...Array.isArray(options?.subModules) ? options!.subModules : [],
+        ...Array.isArray(opts?.providers) ? opts!.providers : [],
+        ...Array.isArray(opts?.subModules) ? opts!.subModules : [],
       ]),
       Injectable(),
     ] ,target);

@@ -44,7 +44,11 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
         try {
           await next();
         } catch(err) {
-          logger.error(`boot Error \n  ${err} \n ${err?.stack}`);
+          logger.error(`boot Error \n ${err?.stack}`);
+          // add default log transport.
+          if (Logger.getTransportCount() === 0) {
+            Logger.addTransport(new ConsoleLogTransport());
+          }
         }
       },
       bootSetupEnv(containerOptions),
