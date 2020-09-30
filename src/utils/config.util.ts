@@ -2,8 +2,6 @@ import nodePath from 'path';
 
 export function getConfigAccessPath(scanNodeNamePaths: string[], path?:string):string {
   // we should ignore the the first name path
-  if (scanNodeNamePaths.length <= 1) return '';
-
   const configPaths:string[] = scanNodeNamePaths.slice(1);
   let configAccessPath:string = '';
   if (!path || path === '' || path === '.') {

@@ -9,7 +9,9 @@ import { ILogger, Logger, ConsoleLogTransport } from '../logger';
 const DefaultLifeCyclePhases =
 {
   startupLifecyclePhase:  [
-    'onInit', 'onAppWillReady', '__onAppReady__'
+    'onInit',
+    'onAppWillReady',
+    '__onAppReady__',
   ],
 
   readyLifecyclePhase: [
@@ -35,59 +37,73 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
     ...(options?.containerOptions || {})
   };
 
-  const lifeCyclePhases: {[key: string]: string[]} = DefaultLifeCyclePhases;
-  const lifeCycleNames: string[] = [];
-  Object.values(lifeCyclePhases).forEach((names: string[]) => {
-    lifeCycleNames.push(...names);
-  });
-
   return await scan(appModule, {
     // context level hooks.
     contextScanHook: hookUtil.nestHooks([
-      async (context: IScanContext, next: Function)=> {
+      async (context: IScanContext, next: Function) => {
         try {
           await next();
         } catch(err) {
           logger.error(`boot Error \n  ${err} \n ${err?.stack}`);
         }
       },
+      bootSetupEnv(containerOptions),
+      bootLoadConfig(),
+      bootLifeCyclePhases(),
+    ]),
+    scanNodeScanHook: scanNodeCoreHook(),
+  });
+};
 
-      // setup the boot env
-      async function setupEnv(context: IScanContext, next: Function) {
-        // define context
-        context.container = new Container(containerOptions);
-        context.processArgv = argv;
+function bootSetupEnv(containerOptions?:{ [key: string]: any}) {
+  const lifeCycleNames: string[] = Object.values(DefaultLifeCyclePhases).flat();
 
-        // config
-        context.globalConfig = {};
-        objectExtend<object, object>(true, context.globalConfig, argv);
+  return async (context: IScanContext, next: Function) => {
+    // define context
+    context.container = new Container(containerOptions);
+    context.processArgv = argv;
 
-        context.getScanNodeByProvider = (provider: object): IScanNode=> {
-          return Metadata.getMetadata(provider, provider) as IScanNode;
+    // config
+    context.globalConfig = {};
+
+    context.lifeCyclePhasesHooks = {};
+    objectExtend<object, object>(true, context.globalConfig, argv);
+
+    context.getScanNodeByProvider = (provider: object): IScanNode=> {
+      return Metadata.getMetadata(provider, provider) as IScanNode;
+    }
+
+    await hookUtil.traverseScanNodeHook(
+      context.rootScanNode!,
+      (scanNode: IScanNode) => {
+        // bind the provider to scanNode.
+        Metadata.defineMetadata(scanNode.provider, scanNode, scanNode.provider);
+        // lifecycle
+        scanNode.lifeCycleNodes = {};
+        lifeCycleNames.forEach((lifeCycleName: string) => {
+          scanNode.lifeCycleNodes[lifeCycleName] = {};
+        });
+        scanNode.getConfig = (path?:string): any => {
+          const configAccessPath:string = getConfigAccessPath(scanNode.namePaths, path);
+          return objectPath.get(scanNode.context.globalConfig, configAccessPath);
         }
 
-        await hookUtil.traverseTreeNodeHook(context.rootScanNode!, async (scanNode: IScanNode, next: Function)=> {
-          // bind the provider to scanNode.
-          Metadata.defineMetadata(scanNode.provider, scanNode, scanNode.provider);
-
-          // lifecycle
-          scanNode.lifeCycleNodes = {};
-          lifeCycleNames.forEach((lifeCycleName: string) => {
-            scanNode.lifeCycleNodes[lifeCycleName] = {};
-          });
-
-          scanNode.getConfig = (path?:string): any => {
-            const configAccessPath:string = getConfigAccessPath(scanNode.namePaths, path);
-            return objectPath.get(scanNode.context.globalConfig, configAccessPath);
-          }
-          await next();
-        })();
-
-        await next();
+        return null;
       },
+      hookUtil.sequenceHooks
+      )(null);
 
-      async function setupConfig(context: IScanContext, next: Function) {
-        await hookUtil.traverseTreeNodeHook(context.rootScanNode!, async (scanNode: IScanNode, next: Function)=> {
+    await next();
+  }
+}
+
+function bootLoadConfig() {
+  return async (context: IScanContext, next: Function) => {
+    await hookUtil.traverseScanNodeHook(
+      context.rootScanNode!,
+      () => {
+        return async (scanNode: IScanNode, next: Function)=> {
+          await next();
           const configAccessPath:string = getConfigAccessPath(scanNode.namePaths);
           const globalConfig:object = scanNode.context.globalConfig;
           // provide config.
@@ -107,146 +123,127 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
           }
           // https://www.npmjs.com/package/extend
           objectPath.set<object>(globalConfig, configAccessPath, preProviderConfig);
-
-          await next();
-        })();
-        // the argv has highest priority
-        objectExtend<object, object>(true, context.globalConfig, argv);
-        await next();
-      },
-
-      async function setupLifecycle(context: IScanContext, next: Function) {
-        await next();
-        const rootScanNode:IScanNode = context.rootScanNode!;
-        const lifeCyclePhasesHookMap:{ [key: string]: Function} = {};
-
-        Object.keys(lifeCyclePhases).forEach((lifeCyclePhaseName: string) => {
-          const lifeCycleNames:string[] = lifeCyclePhases[lifeCyclePhaseName];
-          lifeCyclePhasesHookMap[lifeCyclePhaseName] = hookUtil.sequenceHooks(lifeCycleNames.map((lifeCycleName:string) => {
-            return buildScanNodeInstanceLifeCycleHook(rootScanNode, lifeCycleName);
-          }));
-        });
-
-        // startup
-        try {
-          await lifeCyclePhasesHookMap.startupLifecyclePhase(rootScanNode);
-        } catch(err) {
-          logger.error(`startupLifecyclePhase Error \n  ${err} \n ${err?.stack}`);
         }
-
-        process.nextTick(() => {
-          (async () => {
-            try {
-              await lifeCyclePhasesHookMap.readyLifecyclePhase(rootScanNode);
-              // if here there is no LogTransport, add ConsoleLogTransport as default.
-              if (Logger.getTransportCount() === 0) {
-                Logger.addTransport(new ConsoleLogTransport());
-              }
-              // logger.verbose('readyLifecyclePhase completed');
-            } catch(err) {
-              logger.error(`readyLifecyclePhase Error \n  ${err} \n ${err?.stack}`);
-            }
-          })();
-        })
-
-        //shutdown
-        // https://hackernoon.com/graceful-shutdown-in-nodejs-2f8f59d1c357
-        // https://blog.risingstack.com/graceful-shutdown-node-js-kubernetes/
-        process.on('exit', () => {
-          (async () => {
-            try {
-              await lifeCyclePhasesHookMap.shutdownLifecyclePhase(rootScanNode);
-            } catch(err:any) {
-              logger.error('ShutDown Error \n' + err);
-            }
-          })()
-        })
-      }
-    ]),
-    // scanNode level hooks.
-    scanNodeScanHook: hookUtil.nestHooks([
-      async function setupScanNodeDIHook(scanNode: IScanNode, next: Function) {
-        const container:Container = scanNode.context.container;
-
-        let instanceFactory:Function | null = null;
-        const provider:any = scanNode.provider;
-        // here we need deal with kinds of provider value.
-        if (typeof provider === 'function') {
-          container.bind(provider).toSelf();
-          instanceFactory = () => {
-            return container.get(provider);
-          }
-        } else if (typeof provider === 'object') {
-          // https://github.com/inversify/InversifyJS#the-inversifyjs-features-and-api
-          if (Object.prototype.hasOwnProperty.call(provider, 'id') && !!provider.id) {
-            const identifier:any = provider.id;
-            if (Object.prototype.hasOwnProperty.call(provider, 'useValue')) {
-              container.bind(identifier).toConstantValue(provider.useValue);
-              instanceFactory = () => {
-                return container.get(identifier);
-              }
-            } else if (Object.prototype.hasOwnProperty.call(provider, 'useClass')) {
-              container.bind(identifier).to(provider.useClass);
-              instanceFactory = () => {
-                return container.get(identifier);
-              }
-            } else if (Object.prototype.hasOwnProperty.call(provider, 'useFactory')) {
-              container.bind(identifier).toDynamicValue(()=>{
-                return provider.useFactory(scanNode.parent);
-              });
-              instanceFactory = () => {
-                return container.get(identifier);
-              }
-            } else if (Object.prototype.hasOwnProperty.call(provider, 'useExisting')) {
-              container.bind(identifier).toDynamicValue(()=>{
-                return container.get(identifier);
-              });
-            }
-          }
-        }
-
-        await next();
-
-        let instance:any = null;
-        if (instanceFactory) {
-          instance = await instanceFactory();
-        }
-        scanNode.instance = instance;
-        // add  self life cycle
-        if (instance) {
-          // keep the reference to scanNode
-          instance.$scanNode = scanNode;
-        }
-      }
-    ]),
-  });
-};
-
-function buildScanNodeInstanceLifeCycleHook(scanNode: IScanNode, lifecycleName: string):Function {
-  const instance:any = scanNode.instance;
-  const hasLifecycleFunction: boolean = instance && typeof instance[lifecycleName] === 'function';
-  const selfLifecycleHook: Function = hookUtil.nestHooks([
-    ...HookMetadata.getMetadata(scanNode.lifeCycleNodes[lifecycleName]),
-    async (scanNode: IScanNode, next:Function) => {
-      if (hasLifecycleFunction) {
-        // bind the life cycle
-        await instance[lifecycleName](scanNode);
-      }
-      await next();
-    }
-  ]);
-
-  // build the children life cycle
-  const childrenLifeCycleHook:Function = hookUtil.parallelHooks(
-    scanNode.children.map((child:IScanNode) => {
-      return buildScanNodeInstanceLifeCycleHook(child, lifecycleName);
-    })
-  )
-
-  // children life cycle first
-  return hookUtil.bindHookContext(scanNode, hookUtil.sequenceHooks([
-    childrenLifeCycleHook,
-    selfLifecycleHook,
-  ]));
+      }, hookUtil.nestHooks
+      )(null);
+    // the argv has highest priority
+    objectExtend<object, object>(true, context.globalConfig, argv);
+    await next();
+  }
 }
+
+function bootLifeCyclePhases() {
+  const lifeCyclePhases: {[key: string]: string[]} = DefaultLifeCyclePhases;
+  return async (context: IScanContext, next: Function) => {
+    await next();
+
+    Object.keys(lifeCyclePhases).forEach((lifeCyclePhaseName: string) => {
+      const lifeCycleNames:string[] = lifeCyclePhases[lifeCyclePhaseName];
+      context.lifeCyclePhasesHooks[lifeCyclePhaseName] = hookUtil.sequenceHooks(lifeCycleNames.map((lifecycleName:string) => {
+        return hookUtil.traverseScanNodeHook(
+          context.rootScanNode!,
+          (scanNode: IScanNode) => {
+            const instance:any = scanNode.instance;
+            const hasLifecycleFunction: boolean = instance && typeof instance[lifecycleName] === 'function';
+            return hookUtil.nestHooks([
+              ...HookMetadata.getMetadata(scanNode.lifeCycleNodes[lifecycleName]),
+              async (scanNode: IScanNode, next:Function) => {
+                if (hasLifecycleFunction) {
+                  await instance[lifecycleName](scanNode);
+                }
+                await next();
+              }
+            ]);
+          }, hookUtil.nestReversedHooks);
+      }));
+    });
+
+    const lifeCyclePhasesHooks: {[key: string]: Function} = context.lifeCyclePhasesHooks;
+
+    await lifeCyclePhasesHooks.startupLifecyclePhase();
+    process.nextTick(() => {
+      (async () => {
+        try {
+          // add default log transport.
+          if (Logger.getTransportCount() === 0) {
+            Logger.addTransport(new ConsoleLogTransport());
+          }
+          await lifeCyclePhasesHooks.readyLifecyclePhase();
+        } catch(err:any) {
+          logger.error('Ready Error \n' + err);
+        }
+      })()
+    })
+
+    //shutdown
+    // https://hackernoon.com/graceful-shutdown-in-nodejs-2f8f59d1c357
+    // https://blog.risingstack.com/graceful-shutdown-node-js-kubernetes/
+    process.on('exit', () => {
+      (async () => {
+        try {
+          await lifeCyclePhasesHooks.shutdownLifecyclePhase();
+        } catch(err:any) {
+          logger.error('ShutDown Error \n' + err);
+        }
+      })()
+    })
+  }
+}
+
+function scanNodeCoreHook() {
+  return async (scanNode: IScanNode, next: Function) => {
+    const container:Container = scanNode.context.container;
+    let instanceFactory:Function | null = null;
+    const provider:any = scanNode.provider;
+    // here we need deal with kinds of provider value.
+    if (typeof provider === 'function') {
+      container.bind(provider).toSelf();
+      instanceFactory = () => {
+        return container.get(provider);
+      }
+    } else if (typeof provider === 'object') {
+      // https://github.com/inversify/InversifyJS#the-inversifyjs-features-and-api
+      if (Object.prototype.hasOwnProperty.call(provider, 'id') && !!provider.id) {
+        const identifier:any = provider.id;
+        if (Object.prototype.hasOwnProperty.call(provider, 'useValue')) {
+          container.bind(identifier).toConstantValue(provider.useValue);
+          instanceFactory = () => {
+            return container.get(identifier);
+          }
+        } else if (Object.prototype.hasOwnProperty.call(provider, 'useClass')) {
+          container.bind(identifier).to(provider.useClass);
+          instanceFactory = () => {
+            return container.get(identifier);
+          }
+        } else if (Object.prototype.hasOwnProperty.call(provider, 'useFactory')) {
+          container.bind(identifier).toDynamicValue(()=>{
+            return provider.useFactory(scanNode.parent);
+          });
+          instanceFactory = () => {
+            return container.get(identifier);
+          }
+        } else if (Object.prototype.hasOwnProperty.call(provider, 'useExisting')) {
+          container.bind(identifier).toDynamicValue(()=>{
+            return container.get(identifier);
+          });
+        }
+      }
+    }
+
+    await next();
+
+    let instance:any = null;
+    if (instanceFactory) {
+      instance = await instanceFactory();
+    }
+    scanNode.instance = instance;
+    // add  self life cycle
+    if (instance) {
+      // keep the reference to scanNode
+      instance.$scanNode = scanNode;
+    }
+  }
+}
+
+
 
