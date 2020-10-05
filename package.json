@@ -1,6 +1,6 @@
 {
   "name": "@augejs/module-core",
-  "version": "1.0.1-rc.1",
+  "version": "1.0.1-rc.2",
   "description": "`@augejs/module-core` is a module framework which support using `dependency injection` way to composite kinds of `Modules` and `Providers` to complex application.",
   "main": "dist/main.js",
   "directories": {
@@ -35,6 +35,7 @@
     "extend": "^3.0.2",
     "inversify": "^5.0.1",
     "object-path": "^0.11.4",
+    "reflect-metadata": "^0.1.13",
     "yargs": "^15.4.1"
   },
   "devDependencies": {
@@ -51,7 +52,6 @@
     "husky": "^4.3.0",
     "jest": "^26.4.2",
     "prettier": "2.1.0",
-    "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "ts-jest": "^26.3.0",
     "ts-node": "^9.0.0",

@@ -17,6 +17,10 @@ A Module is a container which can fill with kinds of providers.
 A Provider is a abstract concept. Maybe an Entity, a File, a structure, a component, a service, or a string.
 
 ### Usage
+```bash
+npm install @augejs/module-core reflect-metadata -S
+```
+
 ```javascript
 
 import { Module, Config, Value, boot, ILogger, GetLogger } from '@augejs/module-core';
