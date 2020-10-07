@@ -1,13 +1,12 @@
+import { argv } from 'yargs';
 import cluster from 'cluster';
 
-import { argv } from 'yargs';
 import { scan, IScanNode, IScanContext, hookUtil, HookMetadata, Metadata } from '@augejs/provider-scanner';
 import { getConfigAccessPath } from './config.util';
 import { objectPath, objectExtend } from './object.util';
-import { BindingScopeEnum, Container, Injectable } from '../ioc';
-import { Config, ConfigLoader } from '../decorators';
+import { BindingScopeEnum, Container } from '../ioc';
+import { Cluster, Config, ConfigLoader } from '../decorators';
 import { ILogger, Logger, ConsoleLogTransport } from '../logger';
-import { Cluster } from '../decorators/Cluster.decorator';
 
 const DefaultLifeCyclePhases =
 {
@@ -40,16 +39,20 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
     ...(options?.containerOptions || {})
   };
 
-  const isClusterMaster = cluster.isMaster && Cluster.hasMetadata(appModule) && !Cluster.getMetadata(appModule).disabled;
-  let rootModule: any = appModule;
-  if (isClusterMaster) {
-    @Cluster(Cluster.getMetadata(appModule))
-    @Injectable()
-    class ClusterModule {}
-    rootModule = ClusterModule;
+  if (cluster.isMaster && Cluster.hasMetadata(appModule)) {
+    const clusterOptions = Cluster.getMetadata(appModule);
+    if (clusterOptions.enable) {
+      const clusterModule = clusterOptions.clusterModule || Cluster.DefaultClusterModule;
+      Metadata.decorate([
+        Cluster.ClusterMasterClassDecorator({
+          workers: clusterOptions.workers,
+        })
+      ], clusterModule);
+      appModule = clusterModule;
+    }
   }
 
-  return await scan(rootModule, {
+  return await scan(appModule, {
     // context level hooks.
     contextScanHook: hookUtil.nestHooks([
       async (context: IScanContext, next: Function) => {
@@ -61,6 +64,7 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
           if (Logger.getTransportCount() === 0) {
             Logger.addTransport(new ConsoleLogTransport());
           }
+          process.exit(1);
         }
       },
       bootSetupEnv(containerOptions),
@@ -152,7 +156,7 @@ function bootLifeCyclePhases() {
   const lifeCyclePhases: {[key: string]: string[]} = DefaultLifeCyclePhases;
   return async (context: IScanContext, next: Function) => {
     await next();
-
+    // last step
     Object.keys(lifeCyclePhases).forEach((lifeCyclePhaseName: string) => {
       const lifeCycleNames:string[] = lifeCyclePhases[lifeCyclePhaseName];
       context.lifeCyclePhasesHooks[lifeCyclePhaseName] = hookUtil.sequenceHooks(lifeCycleNames.map((lifecycleName:string) => {
@@ -177,31 +181,31 @@ function bootLifeCyclePhases() {
     const lifeCyclePhasesHooks: {[key: string]: Function} = context.lifeCyclePhasesHooks;
 
     await lifeCyclePhasesHooks.startupLifecyclePhase();
-    process.nextTick(() => {
-      (async () => {
-        try {
-          // add default log transport.
-          if (Logger.getTransportCount() === 0) {
-            Logger.addTransport(new ConsoleLogTransport());
-          }
-          await lifeCyclePhasesHooks.readyLifecyclePhase();
-        } catch(err:any) {
-          logger.error('Ready Error \n' + err);
+    process.nextTick(async () => {
+      try {
+        // add default log transport.
+        if (Logger.getTransportCount() === 0) {
+          Logger.addTransport(new ConsoleLogTransport());
         }
-      })()
+        // report the container self is ready
+        process.send?.({cmd: '__onAppReady__'});
+
+        await lifeCyclePhasesHooks.readyLifecyclePhase();
+      } catch(err:any) {
+        logger.error('Ready Error \n' + err);
+      }
     })
 
     //shutdown
     // https://hackernoon.com/graceful-shutdown-in-nodejs-2f8f59d1c357
     // https://blog.risingstack.com/graceful-shutdown-node-js-kubernetes/
-    process.on('exit', () => {
-      (async () => {
-        try {
-          await lifeCyclePhasesHooks.shutdownLifecyclePhase();
-        } catch(err:any) {
-          logger.error('ShutDown Error \n' + err);
-        }
-      })()
+    process.once('SIGTERM', async () => {
+      try {
+        await lifeCyclePhasesHooks.shutdownLifecyclePhase();
+      } catch(err:any) {
+        logger.error('ShutDown Error \n' + err);
+      }
+      process.exit();
     })
   }
 }
