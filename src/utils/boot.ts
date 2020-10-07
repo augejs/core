@@ -1,10 +1,13 @@
+import cluster from 'cluster';
+
 import { argv } from 'yargs';
 import { scan, IScanNode, IScanContext, hookUtil, HookMetadata, Metadata } from '@augejs/provider-scanner';
 import { getConfigAccessPath } from './config.util';
 import { objectPath, objectExtend } from './object.util';
-import { BindingScopeEnum, Container } from '../ioc';
+import { BindingScopeEnum, Container, Injectable } from '../ioc';
 import { Config, ConfigLoader } from '../decorators';
 import { ILogger, Logger, ConsoleLogTransport } from '../logger';
+import { Cluster } from '../decorators/Cluster.decorator';
 
 const DefaultLifeCyclePhases =
 {
@@ -37,7 +40,16 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
     ...(options?.containerOptions || {})
   };
 
-  return await scan(appModule, {
+  const isClusterMaster = cluster.isMaster && Cluster.hasMetadata(appModule) && !Cluster.getMetadata(appModule).disabled;
+  let rootModule: any = appModule;
+  if (isClusterMaster) {
+    @Cluster(Cluster.getMetadata(appModule))
+    @Injectable()
+    class ClusterModule {}
+    rootModule = ClusterModule;
+  }
+
+  return await scan(rootModule, {
     // context level hooks.
     contextScanHook: hookUtil.nestHooks([
       async (context: IScanContext, next: Function) => {
