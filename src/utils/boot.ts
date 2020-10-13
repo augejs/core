@@ -1,5 +1,5 @@
-import { argv } from 'yargs';
 import cluster from 'cluster';
+import yargsParse from 'yargs-parser';
 
 import { scan, IScanNode, IScanContext, hookUtil, HookMetadata, Metadata } from '@augejs/provider-scanner';
 import { getConfigAccessPath } from './config.util';
@@ -26,19 +26,13 @@ const DefaultLifeCyclePhases =
 };
 
 interface IBootOptions {
-  containerOptions?: { [key: string]: any}
+  containerOptions?: Record<string, any>,
+  config?: Record<string, any>,
 }
 
 const logger:ILogger = Logger.getLogger('boot');
 
 export const boot = async (appModule:Function, options?:IBootOptions): Promise<IScanContext> => {
-  const containerOptions = {
-    defaultScope: BindingScopeEnum.Singleton,
-    autoBindInjectable: false,
-    skipBaseClassChecks: true,
-    ...(options?.containerOptions || {})
-  };
-
   if (cluster.isMaster && Cluster.hasMetadata(appModule)) {
     const clusterOptions = Cluster.getMetadata(appModule);
     if (clusterOptions.enable) {
@@ -67,27 +61,29 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
           process.exit(1);
         }
       },
-      bootSetupEnv(containerOptions),
-      bootLoadConfig(),
+      bootSetupEnv(options),
+      bootLoadConfig(options),
       bootLifeCyclePhases(),
     ]),
     scanNodeScanHook: scanNodeCoreHook(),
   });
 };
 
-function bootSetupEnv(containerOptions?:{ [key: string]: any}) {
+function bootSetupEnv(options?:IBootOptions) {
+  const containerOptions = {
+    defaultScope: BindingScopeEnum.Singleton,
+    autoBindInjectable: false,
+    skipBaseClassChecks: true,
+    ...(options?.containerOptions || {})
+  };
+
   const lifeCycleNames: string[] = Object.values(DefaultLifeCyclePhases).flat();
 
   return async (context: IScanContext, next: Function) => {
     // define context
     context.container = new Container(containerOptions);
-    context.processArgv = argv;
-
-    // config
     context.globalConfig = {};
-
     context.lifeCyclePhasesHooks = {};
-    objectExtend<object, object>(true, context.globalConfig, argv);
 
     context.getScanNodeByProvider = (provider: object): IScanNode=> {
       return Metadata.getMetadata(provider, provider) as IScanNode;
@@ -117,7 +113,7 @@ function bootSetupEnv(containerOptions?:{ [key: string]: any}) {
   }
 }
 
-function bootLoadConfig() {
+function bootLoadConfig(options?:IBootOptions) {
   return async (context: IScanContext, next: Function) => {
     await hookUtil.traverseScanNodeHook(
       context.rootScanNode!,
@@ -146,8 +142,12 @@ function bootLoadConfig() {
         }
       }, hookUtil.nestHooks
       )(null);
-    // the argv has highest priority
-    objectExtend<object, object>(true, context.globalConfig, argv);
+
+    // the external global config has highest priority
+    objectExtend<object, object>(true, context.globalConfig, {
+      ...(options?.config || yargsParse(process.argv.slice(2)))
+    });
+
     await next();
   }
 }

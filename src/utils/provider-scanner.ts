@@ -4,7 +4,6 @@ import { IScanContext as IProviderScanContext, IScanNode as IProviderScanNode } 
 export interface IScanContext extends IProviderScanContext {
   rootScanNode?: IScanNode
   container: Container
-  processArgv: { [key: string]: any }
   getScanNodeByProvider(provider: object): IScanNode
 }
 
