@@ -1,6 +1,6 @@
 {
   "name": "@augejs/module-core",
-  "version": "1.0.1-rc.6",
+  "version": "1.0.1-rc.7",
   "description": "`@augejs/module-core` is a module framework which support using `dependency injection` way to composite kinds of `Modules` and `Providers` to complex application.",
   "main": "dist/main.js",
   "directories": {
