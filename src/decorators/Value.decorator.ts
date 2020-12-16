@@ -6,7 +6,7 @@ const noopObject = {};
  * @param {string} [path='']
  * @returns {PropertyDecorator}
  */
-export function Value(path?:string):PropertyDecorator {
+export function Value(path?:string, transformer?: (value: any, path?: string, scanNode?: IScanNode)=>any):PropertyDecorator {
   return (target: Object, propertyKey: string | symbol) => {
     let memoizedName = `$memoized_${propertyKey.toString()}`;
     (target as any)[memoizedName] = noopObject;
@@ -16,7 +16,10 @@ export function Value(path?:string):PropertyDecorator {
         if (instance[memoizedName] === noopObject) {
           // expensive calculate
           const scanNode:IScanNode = instance.$scanNode;
-          const result:any = scanNode.getConfig(path)
+          let result:any = scanNode.getConfig(path)
+          if (transformer) {
+            result = transformer(result, path, scanNode);
+          }
           instance[memoizedName] = result;
         }
         return instance[memoizedName];
