@@ -9,4 +9,5 @@ export * from './ScanHook.decorator';
 export * from './GetLogger.decorator';
 export * from './LifecycleHook.decorator';
 export * from './Cluster.decorator';
+export * from './GetScanNode.decorator';
 
