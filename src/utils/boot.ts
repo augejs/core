@@ -53,7 +53,7 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
         try {
           await next();
         } catch(err) {
-          logger.error(`boot Error \n ${err?.stack}`);
+          logger.error(`boot Error \n ${err?.stack || err?.message || err}`);
           // add default log transport.
           if (Logger.getTransportCount() === 0) {
             Logger.addTransport(new ConsoleLogTransport());
@@ -192,7 +192,7 @@ function bootLifeCyclePhases() {
 
         await lifeCyclePhasesHooks.readyLifecyclePhase();
       } catch(err:any) {
-        logger.error('Ready Error \n' + err);
+        logger.error(`Ready Error \n ${err?.stack || err?.message || err}`);
       }
     })
 
@@ -203,7 +203,7 @@ function bootLifeCyclePhases() {
       try {
         await lifeCyclePhasesHooks.shutdownLifecyclePhase();
       } catch(err:any) {
-        logger.error('ShutDown Error \n' + err);
+        logger.error(`ShutDown Error \n ${err?.stack || err?.message || err}`);
       }
       process.exit();
     })
