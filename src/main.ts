@@ -7,7 +7,7 @@ export * from './ioc';
 export * from './logger';
 export * from './utils';
 
-export const __appRootDirName: string = process.env.APP_ROOT_DIR_NAME ||
+export const __appRootDir: string = process.env.APP_ROOT_DIR ||
   (process.env.NODE_ENV === 'production' ? path.join(require.main!.filename, '..') : process.cwd());
 
 export {
