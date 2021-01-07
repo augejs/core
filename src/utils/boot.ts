@@ -5,7 +5,7 @@ import { scan, IScanNode, IScanContext, hookUtil, HookMetadata, Metadata } from 
 import { getConfigAccessPath } from './config.util';
 import { objectPath, objectExtend } from './object.util';
 import { BindingScopeEnum, Container } from '../ioc';
-import { Cluster, Config, ConfigLoader } from '../decorators';
+import { Cluster, Config, ConfigLoader, Tag } from '../decorators';
 import { ILogger, Logger, ConsoleLogTransport } from '../logger';
 
 const DefaultLifeCyclePhases =
@@ -65,7 +65,7 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
       bootLoadConfig(options),
       bootLifeCyclePhases(),
     ]),
-    scanNodeScanHook: scanNodeCoreHook(),
+    scanNodeScanHook: scanNodeIOCHook(),
   });
 };
 
@@ -210,7 +210,7 @@ function bootLifeCyclePhases() {
   }
 }
 
-function scanNodeCoreHook() {
+function scanNodeIOCHook() {
   return async (scanNode: IScanNode, next: Function) => {
     const container:Container = scanNode.context.container;
     let instanceFactory:Function | null = null;
@@ -261,9 +261,12 @@ function scanNodeCoreHook() {
     if (instance) {
       // keep the reference to scanNode
       instance.$scanNode = scanNode;
+      // here is tags in constructor
+      if (instance?.constructor) {
+        Tag.getMetadata(instance!.constructor).forEach((tag: string) => {
+          container.bind(tag).toConstantValue(instance);
+        });
+      }
     }
   }
 }
-
-
-
