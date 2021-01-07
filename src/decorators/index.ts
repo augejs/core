@@ -10,5 +10,6 @@ export * from './GetLogger.decorator';
 export * from './LifecycleHook.decorator';
 export * from './Cluster.decorator';
 export * from './GetScanNode.decorator';
+export * from './GetContainer.decorator';
 export * from './Tag.decorator';
 
