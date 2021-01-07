@@ -1,6 +1,6 @@
 import { Container } from '../ioc';
 
-export function GetContainer(context:string = ''):PropertyDecorator {
+export function GetContainer():PropertyDecorator {
   return (target: Object, propertyKey: string | symbol) => {
     const descriptor:PropertyDescriptor = {
       get():Container {
