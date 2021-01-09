@@ -63,9 +63,11 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
       },
       bootSetupEnv(options),
       bootLoadConfig(options),
+      bootIoc(),
+      bootInstantiation(),
+      // ...
       bootLifeCyclePhases(),
     ]),
-    scanNodeScanHook: scanNodeIOCHook(),
   });
 };
 
@@ -76,19 +78,15 @@ function bootSetupEnv(options?:IBootOptions) {
     skipBaseClassChecks: true,
     ...(options?.containerOptions || {})
   };
-
   const lifeCycleNames: string[] = Object.values(DefaultLifeCyclePhases).flat();
-
   return async (context: IScanContext, next: Function) => {
     // define context
     context.container = new Container(containerOptions);
     context.globalConfig = {};
     context.lifeCyclePhasesHooks = {};
-
     context.getScanNodeByProvider = (provider: object): IScanNode=> {
       return Metadata.getMetadata(provider, provider) as IScanNode;
     }
-
     await hookUtil.traverseScanNodeHook(
       context.rootScanNode!,
       (scanNode: IScanNode) => {
@@ -103,12 +101,10 @@ function bootSetupEnv(options?:IBootOptions) {
           const configAccessPath:string = getConfigAccessPath(scanNode.namePaths, path);
           return objectPath.get(scanNode.context.globalConfig, configAccessPath);
         }
-
         return null;
       },
       hookUtil.sequenceHooks
-      )(null);
-
+    )(null);
     await next();
   }
 }
@@ -141,13 +137,97 @@ function bootLoadConfig(options?:IBootOptions) {
           objectPath.set<object>(globalConfig, configAccessPath, preProviderConfig);
         }
       }, hookUtil.nestHooks
-      )(null);
+    )(null);
 
     // the external global config has highest priority
     objectExtend<object, object>(true, context.globalConfig, {
       ...(options?.config || yargsParse(process.argv.slice(2)))
     });
+    await next();
+  }
+}
 
+function bootIoc() {
+  return async (context: IScanContext, next: Function) => {
+    await hookUtil.traverseScanNodeHook(
+      context.rootScanNode!,
+      () => {
+        return async (scanNode: IScanNode, next: Function) => {
+          const container:Container = scanNode.context.container;
+          const provider:any = scanNode.provider;
+          // here we need deal with kinds of provider value.
+          if (typeof provider === 'function') {
+            container.bind(provider).toSelf();
+            scanNode.instanceFactory = () => {
+              return container.get(provider);
+            }
+          } else if (typeof provider === 'object') {
+            // https://github.com/inversify/InversifyJS#the-inversifyjs-features-and-api
+            const identifier:any = provider?.id;
+            if (identifier) {
+              if (provider.useValue) {
+                container.bind(identifier).toConstantValue(provider.useValue);
+                scanNode.instanceFactory = ()=>{
+                  return container.get(identifier);
+                }
+              } else if (typeof provider.useClass === 'function') {
+                container.bind(identifier).to(provider.useClass);
+                scanNode.instanceFactory = ()=>{
+                  return container.get(identifier);
+                }
+              } else if (typeof provider.useFactory === 'function') {
+                const factoryResult = await provider.useFactory(container, scanNode.parent);
+                if (factoryResult) {
+                  if (typeof factoryResult === 'function') {
+                    container.bind(identifier).to(factoryResult);
+                    scanNode.instanceFactory = ()=>{
+                      return container.get(identifier);
+                    }
+                  } else {
+                    container.bind(identifier).toConstantValue(factoryResult);
+                    scanNode.instanceFactory = ()=>{
+                      return container.get(identifier);
+                    }
+                  }
+                }
+              }
+            }
+          }
+          await next();
+        }
+      }, hookUtil.nestReversedHooks
+    )(null);
+    await next();
+  }
+}
+
+function bootInstantiation() {
+  return async (context: IScanContext, next: Function) => {
+    await hookUtil.traverseScanNodeHook(
+      context.rootScanNode!,
+      () => {
+        return async (scanNode: IScanNode, next: Function)=> {
+          await next();
+          let instance:any = null;
+          const instanceFactory = scanNode.instanceFactory;
+          if (instanceFactory) {
+            instance = await instanceFactory();
+          }
+          scanNode.instance = instance;
+          // add  self life cycle
+          if (instance) {
+            // keep the reference to scanNode
+            instance.$scanNode = scanNode;
+            // here is tags in constructor
+            if (Tag.hasMetadata(scanNode.provider)) {
+              Tag.getMetadata(scanNode.provider).forEach((tag: string) => {
+                context.container.bind(tag).toConstantValue(instance);
+              });
+            }
+          }
+        }
+      }, hookUtil.nestReversedHooks
+    )(null);
     await next();
   }
 }
@@ -207,66 +287,5 @@ function bootLifeCyclePhases() {
       }
       process.exit();
     })
-  }
-}
-
-function scanNodeIOCHook() {
-  return async (scanNode: IScanNode, next: Function) => {
-    const container:Container = scanNode.context.container;
-    let instanceFactory:Function | null = null;
-    const provider:any = scanNode.provider;
-    // here we need deal with kinds of provider value.
-    if (typeof provider === 'function') {
-      container.bind(provider).toSelf();
-      instanceFactory = () => {
-        return container.get(provider);
-      }
-    } else if (typeof provider === 'object') {
-      // https://github.com/inversify/InversifyJS#the-inversifyjs-features-and-api
-      if (Object.prototype.hasOwnProperty.call(provider, 'id') && !!provider.id) {
-        const identifier:any = provider.id;
-        if (Object.prototype.hasOwnProperty.call(provider, 'useValue')) {
-          container.bind(identifier).toConstantValue(provider.useValue);
-          instanceFactory = () => {
-            return container.get(identifier);
-          }
-        } else if (Object.prototype.hasOwnProperty.call(provider, 'useClass')) {
-          container.bind(identifier).to(provider.useClass);
-          instanceFactory = () => {
-            return container.get(identifier);
-          }
-        } else if (Object.prototype.hasOwnProperty.call(provider, 'useFactory')) {
-          container.bind(identifier).toDynamicValue(()=>{
-            return provider.useFactory(scanNode.parent);
-          });
-          instanceFactory = () => {
-            return container.get(identifier);
-          }
-        } else if (Object.prototype.hasOwnProperty.call(provider, 'useExisting')) {
-          container.bind(identifier).toDynamicValue(()=>{
-            return container.get(identifier);
-          });
-        }
-      }
-    }
-
-    await next();
-
-    let instance:any = null;
-    if (instanceFactory) {
-      instance = await instanceFactory();
-    }
-    scanNode.instance = instance;
-    // add  self life cycle
-    if (instance) {
-      // keep the reference to scanNode
-      instance.$scanNode = scanNode;
-      // here is tags in constructor
-      if (instance?.constructor) {
-        Tag.getMetadata(instance!.constructor).forEach((tag: string) => {
-          container.bind(tag).toConstantValue(instance);
-        });
-      }
-    }
   }
 }
