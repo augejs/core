@@ -61,13 +61,12 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
           process.exit(1);
         }
       },
+      bootLifeCyclePhases(),
       bootSetupEnv(options),
       bootLoadConfig(options),
       bootIoc(),
-      bootInstantiation(),
-      // ...
-      bootLifeCyclePhases(),
     ]),
+    scanNodeScanHook: scanNodeInstantiation(),
   });
 };
 
@@ -201,34 +200,26 @@ function bootIoc() {
   }
 }
 
-function bootInstantiation() {
-  return async (context: IScanContext, next: Function) => {
-    await hookUtil.traverseScanNodeHook(
-      context.rootScanNode!,
-      () => {
-        return async (scanNode: IScanNode, next: Function)=> {
-          await next();
-          let instance:any = null;
-          const instanceFactory = scanNode.instanceFactory;
-          if (instanceFactory) {
-            instance = await instanceFactory();
-          }
-          scanNode.instance = instance;
-          // add  self life cycle
-          if (instance) {
-            // keep the reference to scanNode
-            instance.$scanNode = scanNode;
-            // here is tags in constructor
-            if (Tag.hasMetadata(scanNode.provider)) {
-              Tag.getMetadata(scanNode.provider).forEach((tag: string) => {
-                context.container.bind(tag).toConstantValue(instance);
-              });
-            }
-          }
-        }
-      }, hookUtil.nestReversedHooks
-    )(null);
+function scanNodeInstantiation() {
+  return async (scanNode: IScanNode, next: Function)=> {
     await next();
+    let instance:any = null;
+    const instanceFactory = scanNode.instanceFactory;
+    if (instanceFactory) {
+      instance = await instanceFactory();
+    }
+    scanNode.instance = instance;
+    // add  self life cycle
+    if (instance) {
+      // keep the reference to scanNode
+      instance.$scanNode = scanNode;
+      // here is tags in constructor
+      if (Tag.hasMetadata(scanNode.provider)) {
+        Tag.getMetadata(scanNode.provider).forEach((tag: string) => {
+          scanNode.context.container.bind(tag).toConstantValue(instance);
+        });
+      }
+    }
   }
 }
 
