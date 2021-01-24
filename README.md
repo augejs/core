@@ -1,10 +1,10 @@
 # augejs
 
-[![npm version](https://badge.fury.io/js/%40augejs%2Fmodule-core.svg)](https://www.npmjs.com/package/@augejs/module-core) [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+[![npm version](https://badge.fury.io/js/%40augejs%2Fcore.svg)](https://www.npmjs.com/package/@augejs/core) [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 
 [`augejs`](https://augejs.github.io/docs/) is a progressive Node.js framework for building applications.
 
-:star2: Star us on GitHub — it helps! :clap:	
+:star2: Star us on GitHub — it helps! :clap:
 
 ## Table of Contents
 
@@ -48,13 +48,13 @@ An application is composite of  3 types of element:
 This project uses [node](http://nodejs.org) and [npm](https://npmjs.com). Go check them out if you don't have them locally installed.
 
 ```sh
-npm install @augejs/module-core
+npm install @augejs/core
 ```
 
 ## Usage
 
 ```javascript
-import { Module, boot } from '@augejs/module-core';
+import { Module, boot } from '@augejs/core';
 
 // we use a @Module decorator to define a module
 @Module()
@@ -120,7 +120,7 @@ see the [Examples](https://github.com/augejs/examples). :open_book:
 
 ## Contributing
 
-Feel free to dive in! [Open an issue](https://github.com/augejs/module-core/issues) or submit PRs.
+Feel free to dive in! [Open an issue](https://github.com/augejs/core/issues) or submit PRs.
 
 `augejs` follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 
@@ -133,9 +133,3 @@ This project exists thanks to all the people who contribute.
 ## License
 
 [MIT](LICENSE) © augejs
-
-
-
-
-
-

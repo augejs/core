@@ -1,7 +1,7 @@
 {
-  "name": "@augejs/module-core",
-  "version": "1.0.2-rc.4",
-  "description": "`@augejs/module-core` is a module framework which support using `dependency injection` way to composite kinds of `Modules` and `Providers` to complex application.",
+  "name": "@augejs/core",
+  "version": "1.0.3",
+  "description": "`@augejs/core` is a module framework which support using `dependency injection` way to composite kinds of `Modules` and `Providers` to complex application.",
   "main": "dist/main.js",
   "directories": {
     "doc": "docs"
@@ -22,12 +22,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/augejs/module-core.git"
+    "url": "git+https://github.com/augejs/core.git"
   },
   "author": "Alex.Zhang",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/augejs/module-core/issues"
+    "url": "https://github.com/augejs/core/issues"
   },
   "homepage": "https://augejs.github.io/docs/",
   "dependencies": {
@@ -35,29 +35,32 @@
     "@types/extend": "^3.0.1",
     "@types/object-path": "^0.11.0",
     "extend": "^3.0.2",
-    "inversify": "^5.0.1",
+    "inversify": "^5.0.5",
     "object-path": "^0.11.5",
     "reflect-metadata": "^0.1.13",
-    "yargs-parser": "^20.2.1"
+    "yargs-parser": "^20.2.4"
   },
   "devDependencies": {
     "@commitlint/cli": "^11.0.0",
     "@commitlint/config-conventional": "^11.0.0",
-    "@types/jest": "^26.0.10",
     "commitlint": "^11.0.0",
-    "conventional-changelog-cli": "^2.1.0",
-    "eslint": "^7.7.0",
-    "eslint-config-prettier": "^6.11.0",
+    "@types/jest": "^26.0.20",
+    "conventional-changelog-cli": "^2.1.1",
+    "eslint": "^7.18.0",
+    "eslint-config-prettier": "^7.2.0",
     "gh-pages": "^3.1.0",
-    "husky": "^4.3.0",
-    "jest": "^26.4.2",
-    "prettier": "2.1.0",
+    "husky": "^4.3.8",
+    "jest": "^26.6.3",
+    "prettier": "2.2.1",
     "rimraf": "^3.0.2",
-    "ts-jest": "^26.3.0",
-    "ts-node": "^9.0.0",
-    "tslib": "^2.0.1",
-    "typedoc": "^0.19.0",
+    "ts-jest": "^26.4.4",
+    "ts-node": "^9.1.1",
+    "tslib": "^2.1.0",
+    "typedoc": "^0.20.17",
     "typescript": "^4.0.2"
+  },
+  "engines": {
+    "node": ">=12.0.0"
   },
   "jest": {
     "moduleFileExtensions": [
