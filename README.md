@@ -2,9 +2,11 @@
 
 [![npm version](https://badge.fury.io/js/%40augejs%2Fcore.svg)](https://www.npmjs.com/package/@augejs/core) [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 
-[`augejs`](https://augejs.github.io/docs/) is a progressive Node.js framework for building applications.
+[`augejs`](https://github.com/augejs/augejs.github.io) is a progressive Node.js framework for building applications.
 
 :star2: Star us on GitHub — it helps! :clap:
+
+https://github.com/augejs/augejs.github.io
 
 ## Table of Contents
 
@@ -12,8 +14,8 @@
 - [Features](#features)
 - [Install](#install)
 - [Usage](#usage)
-- [Package Dependencies](#package-dependencies)
-- [Lifecycle](#lifecycle)
+- [Document](#document)
+- [Examples](#Examples)
 - [Related Efforts](#related-efforts)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
@@ -27,19 +29,21 @@ Look at a diagram below:
 
 <img src="./docs/assets/application-structure.png" alt="Application Module Tree" title="Application Module Tree" width="80%"/>
 
-An application is composite of  3 types of element:
+An application is composite of  3 types of core fundamentals:
 
 `Provider` is an abstract logic unit which can provide for `Module`.
 
-`Decorator` is an abstract logic unit  which can decorate for `Module` and `Provider`.
-
 `Module` is consists of  `Provider` and `Module`.
 
->  This is the one of fundamental concept for `augejs`. 
+`Decorator` is an abstract logic unit  which can decorate for `Module` and `Provider`.
 
 ## Features
 
-+ :penguin:	The core layer is small, simple and extensible.
++ :penguin: Support TypeScript (version 4.0 or higher).
+
++ :penguin: Minimum core to start with，support plugin by using Extend and Adapter.
+
++ :baby_chick: Excellent performance with high unit test coverage rate.
 
 + :baby_chick: Progressive Development.
 
@@ -71,39 +75,9 @@ class AppModule {
 })();
 ```
 
-## Package Dependencies
+## Document
 
-<img src="./docs/assets/packages-dependencies.png" alt="Package Dependencies" title="Package Dependencies" width="80%"/>
-
-## Lifecycle
-
-There is the lifecycle name for `Module` And `Provider`.
-
-<img src="./docs/assets/lifecycle-event.png" alt="Lifecycle" title="Lifecycle" width="80%"/>
-
-Please take a look at this link [provider-scanner-hook](https://github.com/augejs/provider-scanner#hookmetadata), `augejs` is on top of that. `augejs` application boot flow is a middleware execute mode.
-
-## Cluster Decorator
-
-See [examples/cluster](https://github.com/augejs/examples/blob/master/packages/cluster/src/main.ts)
-
-```javascript
-@Cluster({
-  workers: 2
-}) 
-@Module()
-class AppModule() {
-}
-```
-
-The above code, the program will startup as a master daemon process and the `AppModule` will startup as a worker process. If the worker process is exit with an exception or killing by other cases
-then the master process will fork a new work process for `AppModule`.
-
-If the master process is exit with signal(SIGTERM), the work process will shutdown gracefully. 
-
-### Document
-
-visit [augejs.github.io](https://augejs.github.io/docs/). :tada:
+visit [augejs.github.io](https://github.com/augejs/augejs.github.io). :tada:
 
 ## Examples
 
@@ -123,12 +97,6 @@ see the [Examples](https://github.com/augejs/examples). :open_book:
 Feel free to dive in! [Open an issue](https://github.com/augejs/core/issues) or submit PRs.
 
 `augejs` follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
-
-### Contributors
-
-This project exists thanks to all the people who contribute. 
-
-...
 
 ## License
 
