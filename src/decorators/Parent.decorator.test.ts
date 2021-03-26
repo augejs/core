@@ -12,6 +12,7 @@ describe('decorators: Parent.decorator.test', () => {
       }
     ])
     class A {}
+
     expect(Parent.getMetadata(A)).toEqual([
       {
         a: 1

@@ -7,7 +7,7 @@ type ProviderOptions = {
 }
 
 export function Provider(opts?: ProviderOptions):ClassDecorator {
-  return function(target: Function) {
+  return function(target: NewableFunction) {
     Metadata.decorate([
       Name(opts?.name),
       Injectable(),

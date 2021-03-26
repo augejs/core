@@ -1,12 +1,13 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { ParentMetadata } from '@augejs/provider-scanner';
 
 export function Parent(children: object[]):ClassDecorator {
-  return (target: Function) => {
+  return (target: NewableFunction) => {
     Parent.defineMetadata(target, children);
   }
 }
 
-Parent.defineMetadata = (target: object, children: any[]) => {
+Parent.defineMetadata = (target: object, children: object[]) => {
   ParentMetadata.defineMetadata(target, children);
 }
 

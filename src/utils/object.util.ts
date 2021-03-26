@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import objectPath from 'object-path';
 import extend from 'extend';
 

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Metadata } from '@augejs/provider-scanner';
 import { Parent } from './Parent.decorator';
 import { Name } from './Name.decorator';
@@ -5,12 +7,12 @@ import { Injectable } from '../ioc';
 
 type ModuleOptions = {
   name?:string,
-  providers?:any[],
-  subModules?: any[],
+  providers?:(NewableFunction | Record<string, unknown>)[],
+  subModules?: (NewableFunction | NewableFunction[])[],
 }
 
 export function Module(opts?:ModuleOptions):ClassDecorator {
-  return function(target: Function) {
+  return function(target: NewableFunction) {
     Metadata.decorate([
       Name(opts?.name),
       Parent([

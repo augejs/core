@@ -3,9 +3,11 @@ import { ScanHook } from './ScanHook.decorator';
 describe('decorators: ScanHook.decorator', () => {
   it('ScanHook.decorator should have correct metadata', () => {
 
-    const hook = async (_: any, next: Function)=>{};
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    const hook = async ()=>{};
     @ScanHook(hook)
-    class A {};
+    class A {}
+
     expect(ScanHook.getMetadata(A)[0]).toStrictEqual(hook);
   })
 });

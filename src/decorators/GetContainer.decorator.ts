@@ -1,10 +1,13 @@
 import { Container } from '../ioc';
+import { IScanNode } from '../utils';
 
 export function GetContainer():PropertyDecorator {
-  return (target: Object, propertyKey: string | symbol) => {
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  return (target: object, propertyKey: string | symbol) => {
     const descriptor:PropertyDescriptor = {
       get():Container {
-        return (this as any).$scanNode.context.container
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return ((this as any).$scanNode as IScanNode).context.container
       },
     };
 

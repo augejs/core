@@ -1,5 +1,5 @@
 import { Logger } from "./Logger"
-import { ILogTransport, ILogItem } from "./Logger.interface";
+import { ILogTransport } from "./Logger.interface";
 import { LogLevel } from './LogLevel';
 
 describe('logger', ()=>{
@@ -16,7 +16,7 @@ describe('logger', ()=>{
   it('add remove Transport', ()=>{
     const fn = jest.fn();
     const mockLogTransport:ILogTransport = {
-      printMessage(logItem:ILogItem) {
+      printMessage() {
         fn();
       }
     };
@@ -37,7 +37,7 @@ describe('logger', ()=>{
   it('should execute too many times after add Transport', ()=>{
     const fn = jest.fn();
     const mockLogTransport:ILogTransport = {
-      printMessage(logItem:ILogItem) {
+      printMessage() {
         fn();
       }
     };
@@ -58,7 +58,7 @@ describe('logger', ()=>{
 
     const fn = jest.fn();
     const mockLogTransport:ILogTransport = {
-      printMessage(logItem:ILogItem) {
+      printMessage() {
         fn();
       }
     };

@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { NameMetadata } from '@augejs/provider-scanner';
 
 export function Name(name?: string): ClassDecorator {
-  return function(target: Function) {
+  return function(target: NewableFunction) {
     Name.defineMetadata(target, name);
   }
 }
