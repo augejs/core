@@ -3,11 +3,12 @@ import { ScanHook } from './ScanHook.decorator';
 import { IScanNode } from '../utils';
 
 export function LifecycleHook (lifecycleName:string, hooks: HookFunction | HookFunction[]):ClassDecorator {
-  return function(target: Function) {
+  return function(target: NewableFunction) {
     Metadata.decorate([
       ScanHook(
-        async (scanNode: IScanNode, next: Function)=> {
-          HookMetadata.defineMetadata(scanNode.lifeCycleNodes[lifecycleName], hooks);
+        async (scanNode: IScanNode, next: CallableFunction)=> {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          HookMetadata.defineMetadata((scanNode.lifeCycleNodes as any)[lifecycleName], hooks);
           await next();
         }
       )

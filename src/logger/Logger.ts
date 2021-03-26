@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+
 import { ILogTransport, ILogItem, ILogger } from './Logger.interface';
 import { LogLevel } from './LogLevel';
 
@@ -41,10 +44,10 @@ function processQueueLogItems(logItem?:ILogItem) {
 
 export class Logger implements ILogger {
 
-  public static enable: boolean = true;
+  public static enable = true;
   public static logLevel: string = LogLevel.VERBOSE;
 
-  public static getLogger(context:string = ''):ILogger {
+  public static getLogger(context = ''):ILogger {
     let logger:ILogger | undefined = contextLoggerMap.get(context);
     if (!logger) {
       logger = new Logger(context);
@@ -53,20 +56,20 @@ export class Logger implements ILogger {
     return (logger as ILogger);
   }
 
-  public static addTransport(transport: ILogTransport) {
+  public static addTransport(transport: ILogTransport):void {
     if (logTransports.includes(transport)) return;
     logTransports.push(transport);
 
     processQueueLogItems();
   }
 
-  public static removeTransport(transport: ILogTransport) {
+  public static removeTransport(transport: ILogTransport):void {
     const findIdx = logTransports.indexOf(transport);
     if (findIdx === -1) return;
     logTransports.splice(findIdx, 1);
   }
 
-  public static removeAllTransports() {
+  public static removeAllTransports():void {
     logTransports.length = 0;
   }
 
@@ -74,7 +77,7 @@ export class Logger implements ILogger {
     return logTransports.length;
   }
 
-  public static clear() {
+  public static clear():void {
     queueLogItems.length = 0;
   }
 
@@ -124,4 +127,4 @@ export class Logger implements ILogger {
       timestamp: Date.now(),
     });
   }
-};
+}

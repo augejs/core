@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { HookFunction, HookMetadata } from '@augejs/provider-scanner';
 export function ScanHook (hooks: HookFunction | HookFunction[]):ClassDecorator {
-  return function(target: Function) {
+  return function(target: NewableFunction) {
     ScanHook.defineMetadata(target, hooks);
   }
 }

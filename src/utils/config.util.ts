@@ -3,7 +3,7 @@ import nodePath from 'path';
 export function getConfigAccessPath(scanNodeNamePaths: string[], path?:string):string {
   // we should ignore the the first name path
   const configPaths:string[] = scanNodeNamePaths.slice(1);
-  let configAccessPath:string = '';
+  let configAccessPath = '';
   if (!path || path === '' || path === '.') {
     configAccessPath = configPaths.join('.');
   } else {

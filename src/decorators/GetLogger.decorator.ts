@@ -1,11 +1,15 @@
+/* eslint-disable @typescript-eslint/no-this-alias */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { NameMetadata } from '@augejs/provider-scanner';
 import { ILogger, Logger } from "../logger";
 import { IScanNode } from '../utils';
 
 const noopObject = {};
-export function GetLogger(context:string = ''):PropertyDecorator {
+export function GetLogger(context = ''):PropertyDecorator {
+  // eslint-disable-next-line @typescript-eslint/ban-types
   return (target: Object, propertyKey: string | symbol) => {
-    let memoizedName = `$memoized_${propertyKey.toString()}`;
+    const memoizedName = `$memoized_${propertyKey.toString()}`;
     (target as any)[memoizedName] = noopObject;
 
     const descriptor:PropertyDescriptor = {

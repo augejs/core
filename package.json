@@ -1,6 +1,6 @@
 {
   "name": "@augejs/core",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "`@augejs/core` is a module framework which support using `dependency injection` way to composite kinds of `Modules` and `Providers` to complex application.",
   "main": "dist/main.js",
   "directories": {
@@ -10,6 +10,7 @@
     "build": "rimraf dist && tsc --build ./tsconfig.json",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "deploy": "npm run build && npm publish --access public",
+    "lint": "eslint src --ext .ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -31,58 +32,37 @@
   },
   "homepage": "https://augejs.github.io/docs/",
   "dependencies": {
-    "@augejs/provider-scanner": "1.0.0-rc.3",
+    "@augejs/provider-scanner": "1.0.3",
     "@types/extend": "^3.0.1",
     "@types/object-path": "^0.11.0",
     "extend": "^3.0.2",
     "inversify": "^5.0.5",
     "object-path": "^0.11.5",
     "reflect-metadata": "^0.1.13",
-    "yargs-parser": "^20.2.4"
+    "yargs-parser": "^20.2.7"
   },
   "devDependencies": {
-    "@commitlint/cli": "^11.0.0",
-    "@commitlint/config-conventional": "^11.0.0",
-    "commitlint": "^11.0.0",
-    "@types/jest": "^26.0.20",
+    "@commitlint/cli": "^12.0.1",
+    "@commitlint/config-conventional": "^12.0.1",
+    "@types/jest": "^26.0.22",
+    "@typescript-eslint/eslint-plugin": "^4.19.0",
+    "@typescript-eslint/parser": "^4.19.0",
+    "commitlint": "^12.0.1",
     "conventional-changelog-cli": "^2.1.1",
-    "eslint": "^7.18.0",
-    "eslint-config-prettier": "^7.2.0",
+    "eslint": "^7.22.0",
+    "eslint-config-prettier": "^8.1.0",
     "gh-pages": "^3.1.0",
-    "husky": "^4.3.8",
+    "husky": "^5.2.0",
     "jest": "^26.6.3",
-    "prettier": "2.2.1",
+    "prettier": "^2.2.1",
     "rimraf": "^3.0.2",
-    "ts-jest": "^26.4.4",
+    "ts-jest": "^26.5.4",
     "ts-node": "^9.1.1",
     "tslib": "^2.1.0",
-    "typedoc": "^0.20.17",
-    "typescript": "^4.0.2"
+    "typedoc": "^0.20.34",
+    "typescript": "^4.2.3"
   },
   "engines": {
     "node": ">=12.0.0"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".test.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
-  },
-  "husky": {
-    "hooks": {
-      "pre-push": "npm test",
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
   }
 }

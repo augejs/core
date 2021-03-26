@@ -10,7 +10,7 @@ const logger = Logger.getLogger('cluster');
 type ClusterOptions = {
   workers: number
   enable?: boolean
-  clusterModule?: Function
+  clusterModule?: NewableFunction
 };
 
 @Module()
@@ -23,21 +23,21 @@ export function Cluster(opts?:ClusterOptions): ClassDecorator {
     ...opts,
   };
 
-  return function(target: Function) {
-    Cluster.defineMetadata(target, opts!);
+  return function(target: NewableFunction) {
+    Cluster.defineMetadata(target, opts as ClusterOptions);
   }
 }
 
-Cluster.hasMetadata = (target: Object): boolean => {
+Cluster.hasMetadata = (target: NewableFunction): boolean => {
   return Metadata.hasMetadata(Cluster, target)
 }
 
-Cluster.defineMetadata = (target: Object, opts: ClusterOptions)=> {
+Cluster.defineMetadata = (target: NewableFunction, opts: ClusterOptions)=> {
   Metadata.defineMetadata(Cluster, opts, target);
 }
 
-Cluster.getMetadata = (target: object):ClusterOptions => {
-  return Metadata.getMetadata(Cluster, target) || {
+Cluster.getMetadata = (target: NewableFunction):ClusterOptions => {
+  return Metadata.getMetadata(Cluster, target) as ClusterOptions || {
     workers: 0
   };
 }
@@ -50,27 +50,26 @@ Cluster.ClusterMasterClassDecorator = function (opts?:ClusterOptions):ClassDecor
     ...opts,
   };
 
-  return function(target: Function) {
+  return function(target: NewableFunction) {
     Metadata.decorate([
-      Lifecycle__onAppReady__Hook(async (scanNode: IScanNode, next: Function) => {
+      Lifecycle__onAppReady__Hook(async (scanNode: IScanNode, next: CallableFunction) => {
         const cpuCount: number = os.cpus().length;
         let workers: number = opts?.workers || parseInt(process.env.WORKERS || '0') || 0;
         if (workers < 0) {
           workers = Math.abs(Math.trunc(workers));
           workers = Math.min(workers, cpuCount);
-        } else if (workers > 0) {
-          workers = workers;
-        } else {
+        } else if (workers === 0) {
           workers = cpuCount;
         }
 
         await Promise.all(
           Array.from(new Array(workers)).map(()=>{
-            return new Promise((resolve: Function, reject: Function) => {
+            return new Promise((resolve: CallableFunction, reject: CallableFunction) => {
               const worker = cluster.fork()
               .once('exit', (code: number, signal: string) => {
-                reject(new Error(`worker(pid: ${worker.process.pid}) Boot Error`));
+                reject(new Error(`worker(pid: ${worker.process.pid}) code: ${code} signal: ${signal} Boot Error`));
               })
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               .once('message', (message: any)=> {
                 if (message?.cmd === '__onAppReady__') {
                   worker.removeAllListeners('exit');
@@ -90,10 +89,10 @@ Cluster.ClusterMasterClassDecorator = function (opts?:ClusterOptions):ClassDecor
         await next();
       }),
 
-      LifecycleOnAppWillCloseHook(async (scanNode: IScanNode, next: Function) => {
+      LifecycleOnAppWillCloseHook(async (scanNode: IScanNode, next: CallableFunction) => {
         cluster.removeAllListeners('exit');
         await Promise.all(Object.values(cluster.workers).map((worker?: Worker) => {
-          return new Promise((resolve: Function) => {
+          return new Promise((resolve: CallableFunction) => {
             if (!worker) {
               resolve();
               return;

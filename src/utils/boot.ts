@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import cluster from 'cluster';
 import yargsParse from 'yargs-parser';
 
@@ -32,7 +34,7 @@ interface IBootOptions {
 
 const logger:ILogger = Logger.getLogger('boot');
 
-export const boot = async (appModule:Function, options?:IBootOptions): Promise<IScanContext> => {
+export const boot = async (appModule:NewableFunction, options?:IBootOptions): Promise<IScanContext> => {
   if (cluster.isMaster && Cluster.hasMetadata(appModule)) {
     const clusterOptions = Cluster.getMetadata(appModule);
     if (clusterOptions.enable) {
@@ -49,7 +51,7 @@ export const boot = async (appModule:Function, options?:IBootOptions): Promise<I
   return await scan(appModule, {
     // context level hooks.
     contextScanHook: hookUtil.nestHooks([
-      async (context: IScanContext, next: Function) => {
+      async (context: IScanContext, next: CallableFunction) => {
         try {
           await next();
         } catch(err) {
@@ -78,7 +80,7 @@ function bootSetupEnv(options?:IBootOptions) {
     ...(options?.containerOptions || {})
   };
   const lifeCycleNames: string[] = Object.values(DefaultLifeCyclePhases).flat();
-  return async (context: IScanContext, next: Function) => {
+  return async (context: IScanContext, next: CallableFunction) => {
     // define context
     context.container = new Container(containerOptions);
     context.globalConfig = {};
@@ -94,32 +96,32 @@ function bootSetupEnv(options?:IBootOptions) {
         // lifecycle
         scanNode.lifeCycleNodes = {};
         lifeCycleNames.forEach((lifeCycleName: string) => {
-          scanNode.lifeCycleNodes[lifeCycleName] = {};
+          (scanNode.lifeCycleNodes as any)[lifeCycleName] = {};
         });
         scanNode.getConfig = (path?:string): any => {
           const configAccessPath:string = getConfigAccessPath(scanNode.namePaths, path);
-          return objectPath.get(scanNode.context.globalConfig, configAccessPath);
+          return objectPath.get(scanNode.context.globalConfig as object, configAccessPath);
         }
         return null;
       },
       hookUtil.sequenceHooks
-    )(null);
+    )(null, hookUtil.noopNext);
     await next();
   }
 }
 
 function bootLoadConfig(options?:IBootOptions) {
-  return async (context: IScanContext, next: Function) => {
+  return async (context: IScanContext, next: CallableFunction) => {
     await hookUtil.traverseScanNodeHook(
       context.rootScanNode!,
       () => {
-        return async (scanNode: IScanNode, next: Function)=> {
+        return async (scanNode: IScanNode, next: CallableFunction)=> {
           await next();
           const configAccessPath:string = getConfigAccessPath(scanNode.namePaths);
-          const globalConfig:object = scanNode.context.globalConfig;
+          const globalConfig:object = scanNode.context.globalConfig as object;
           // provide config.
           // https://www.npmjs.com/package/object-path
-          let providerConfig:object = Config.getMetadata(scanNode.provider);
+          const providerConfig:object = Config.getMetadata(scanNode.provider);
           const providerConfigLoader:Function = ConfigLoader.getMetadata(scanNode.provider);
           const providerConfigLoaderConfigResult:any = await providerConfigLoader(scanNode);
           if (providerConfigLoaderConfigResult !== undefined) {
@@ -136,10 +138,10 @@ function bootLoadConfig(options?:IBootOptions) {
           objectPath.set<object>(globalConfig, configAccessPath, preProviderConfig);
         }
       }, hookUtil.nestHooks
-    )(null);
+    )(null, hookUtil.noopNext);
 
     // the external global config has highest priority
-    objectExtend<object, object>(true, context.globalConfig, {
+    objectExtend<object, object>(true, context.globalConfig as object, {
       ...(options?.config || yargsParse(process.argv.slice(2)))
     });
     await next();
@@ -147,12 +149,12 @@ function bootLoadConfig(options?:IBootOptions) {
 }
 
 function bootIoc() {
-  return async (context: IScanContext, next: Function) => {
+  return async (context: IScanContext, next: CallableFunction) => {
     await hookUtil.traverseScanNodeHook(
       context.rootScanNode!,
       () => {
-        return async (scanNode: IScanNode, next: Function) => {
-          const container:Container = scanNode.context.container;
+        return async (scanNode: IScanNode, next: CallableFunction) => {
+          const container:Container = scanNode.context.container as Container;
           const provider:any = scanNode.provider;
           // here we need deal with kinds of provider value.
           if (typeof provider === 'function') {
@@ -195,16 +197,16 @@ function bootIoc() {
           await next();
         }
       }, hookUtil.nestReversedHooks
-    )(null);
+    )(null, hookUtil.noopNext);
     await next();
   }
 }
 
 function scanNodeInstantiation() {
-  return async (scanNode: IScanNode, next: Function)=> {
+  return async (scanNode: IScanNode, next: CallableFunction)=> {
     await next();
     let instance:any = null;
-    const instanceFactory = scanNode.instanceFactory;
+    const instanceFactory: CallableFunction | undefined = scanNode.instanceFactory as CallableFunction;
     if (instanceFactory) {
       instance = await instanceFactory();
     }
@@ -216,7 +218,7 @@ function scanNodeInstantiation() {
       // here is tags in constructor
       if (Tag.hasMetadata(scanNode.provider)) {
         Tag.getMetadata(scanNode.provider).forEach((tag: string) => {
-          scanNode.context.container.bind(tag).toConstantValue(instance);
+          (scanNode.context.container as Container).bind(tag).toConstantValue(instance);
         });
       }
     }
@@ -224,21 +226,21 @@ function scanNodeInstantiation() {
 }
 
 function bootLifeCyclePhases() {
-  const lifeCyclePhases: {[key: string]: string[]} = DefaultLifeCyclePhases;
-  return async (context: IScanContext, next: Function) => {
+  const lifeCyclePhases: Record<string, string[]>  = DefaultLifeCyclePhases;
+  return async (context: IScanContext, next: CallableFunction) => {
     await next();
     // last step
     Object.keys(lifeCyclePhases).forEach((lifeCyclePhaseName: string) => {
       const lifeCycleNames:string[] = lifeCyclePhases[lifeCyclePhaseName];
-      context.lifeCyclePhasesHooks[lifeCyclePhaseName] = hookUtil.sequenceHooks(lifeCycleNames.map((lifecycleName:string) => {
+      const lifeCyclePhaseHook = hookUtil.sequenceHooks(lifeCycleNames.map((lifecycleName:string) => {
         return hookUtil.traverseScanNodeHook(
           context.rootScanNode!,
           (scanNode: IScanNode) => {
             const instance:any = scanNode.instance;
             const hasLifecycleFunction: boolean = instance && typeof instance[lifecycleName] === 'function';
             return hookUtil.nestHooks([
-              ...HookMetadata.getMetadata(scanNode.lifeCycleNodes[lifecycleName]),
-              async (scanNode: IScanNode, next:Function) => {
+              ...HookMetadata.getMetadata((scanNode.lifeCycleNodes as any)[lifecycleName]),
+              async (scanNode: IScanNode, next:CallableFunction) => {
                 if (hasLifecycleFunction) {
                   await instance[lifecycleName](scanNode);
                 }
@@ -247,10 +249,14 @@ function bootLifeCyclePhases() {
             ]);
           }, hookUtil.nestReversedHooks);
       }));
+
+      const lifeCyclePhasesHooks: Record<string, CallableFunction> = context.lifeCyclePhasesHooks as Record<string, CallableFunction>;
+      lifeCyclePhasesHooks[lifeCyclePhaseName] = async () => {
+        await lifeCyclePhaseHook(context, hookUtil.noopNext);
+      };
     });
 
-    const lifeCyclePhasesHooks: {[key: string]: Function} = context.lifeCyclePhasesHooks;
-
+    const lifeCyclePhasesHooks: Record<string, CallableFunction> = context.lifeCyclePhasesHooks as Record<string, CallableFunction>;
     await lifeCyclePhasesHooks.startupLifecyclePhase();
     process.nextTick(async () => {
       try {
@@ -258,11 +264,10 @@ function bootLifeCyclePhases() {
         if (Logger.getTransportCount() === 0) {
           Logger.addTransport(new ConsoleLogTransport());
         }
+        await lifeCyclePhasesHooks.readyLifecyclePhase();
         // report the container self is ready
         process.send?.({cmd: '__onAppReady__'});
-
-        await lifeCyclePhasesHooks.readyLifecyclePhase();
-      } catch(err:any) {
+      } catch(err) {
         logger.error(`Ready Error \n ${err?.stack || err?.message || err}`);
       }
     })
@@ -273,7 +278,7 @@ function bootLifeCyclePhases() {
     process.once('SIGTERM', async () => {
       try {
         await lifeCyclePhasesHooks.shutdownLifecyclePhase();
-      } catch(err:any) {
+      } catch(err) {
         logger.error(`ShutDown Error \n ${err?.stack || err?.message || err}`);
       }
       process.exit();

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 
 import { Metadata } from '@augejs/provider-scanner';
 
@@ -12,5 +13,5 @@ Config.defineMetadata = (target: object, config: object)=> {
 }
 
 Config.getMetadata = (target: object):object => {
-  return Metadata.getMetadata(Config, target) || {};
+  return Metadata.getMetadata(Config, target) as object ?? {};
 }
