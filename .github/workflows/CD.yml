@@ -1,0 +1,53 @@
+# https://sergiodxa.com/articles/github-actions-npm-publish
+# https://github.com/marketplace/actions/get-release-notes
+name: CD
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    if: "startsWith(github.event.head_commit.message, 'chore(release):')"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+    - name: Parse Version From Commit Message
+      id: parse-version
+      run: |
+        ReleaseVer=`echo "${{ github.event.head_commit.message }}" | awk -F' ' '{print $2}'`
+        echo "::set-output name=RELEASE_VERSION::${ReleaseVer: 1}"
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: echo "The job commit message ${{ github.event.head_commit.message }}."
+    - run: npm ci
+    - run: npm run lint
+    - run: npm test
+      env:
+        CI: true
+    - run: npm run build --if-present
+    - run: echo "Release version is ${{ steps.parse-version.outputs.RELEASE_VERSION }}"
+    - name: Get notes
+      id: generate_notes
+      uses: anmarkoulis/commitizen-changelog-reader@master
+      with:
+        tag_name: refs/tags/[${{ steps.parse-version.outputs.RELEASE_VERSION }}]
+        changelog: CHANGELOG.md
+    - name: Github Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.AUGEJS_GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.parse-version.outputs.RELEASE_VERSION }}
+        release_name: v${{ steps.parse-version.outputs.RELEASE_VERSION }}
+        prerelease: false
+        draft: false
+        body: ${{ join(fromJson(steps.generate_notes.outputs.notes).notes, '') }}
+    - uses: JS-DevTools/npm-publish@v1
+      with:
+        token: ${{ secrets.AUGEJS_NPM_TOKEN }}
