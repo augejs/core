@@ -1,6 +1,6 @@
 {
   "name": "@augejs/core",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "`@augejs/core` is a module framework which support using `dependency injection` way to composite kinds of `Modules` and `Providers` to complex application.",
   "main": "dist/main.js",
   "directories": {
@@ -34,11 +34,11 @@
   },
   "homepage": "https://augejs.github.io/docs/",
   "dependencies": {
-    "@augejs/provider-scanner": "1.0.4",
+    "@augejs/provider-scanner": "^1.0.6",
     "@types/extend": "^3.0.1",
     "@types/object-path": "^0.11.0",
     "extend": "^3.0.2",
-    "inversify": "^5.0.5",
+    "inversify": "^5.1.1",
     "object-path": "^0.11.5",
     "reflect-metadata": "^0.1.13",
     "yargs-parser": "^20.2.7"
@@ -51,19 +51,19 @@
     "@typescript-eslint/parser": "^4.22.0",
     "commitlint": "^12.1.1",
     "conventional-changelog-cli": "^2.1.1",
-    "eslint": "^7.24.0",
-    "eslint-config-prettier": "^8.2.0",
-    "gh-pages": "^3.1.0",
+    "eslint": "^7.27.0",
+    "eslint-config-prettier": "^8.3.0",
+    "gh-pages": "^3.2.0",
     "husky": "^6.0.0",
-    "jest": "^26.6.3",
-    "prettier": "^2.2.1",
+    "jest": "^27.0.1",
+    "prettier": "^2.3.0",
     "rimraf": "^3.0.2",
     "standard-changelog": "^2.0.27",
-    "ts-jest": "^26.5.4",
-    "ts-node": "^9.1.1",
+    "ts-jest": "^27.0.1",
+    "ts-node": "^10.0.0",
     "tslib": "^2.2.0",
-    "typedoc": "^0.20.35",
-    "typescript": "^4.2.4"
+    "typedoc": "^0.20.36",
+    "typescript": "^4.3.2"
   },
   "engines": {
     "node": ">=12.0.0"
