@@ -1,19 +1,22 @@
 import { Container } from '../ioc';
-import { IScanContext as IProviderScanContext, IScanNode as IProviderScanNode } from '@augejs/provider-scanner';
+import {
+  ScanContext as IProviderScanContext,
+  ScanNode as IProviderScanNode,
+} from '@augejs/provider-scanner';
 
-export interface IScanContext extends IProviderScanContext {
-  rootScanNode?: IScanNode
-  container: Container
+export interface ScanContext extends IProviderScanContext {
+  rootScanNode?: ScanNode;
+  container: Container;
   // eslint-disable-next-line @typescript-eslint/ban-types
-  getScanNodeByProvider(provider: object): IScanNode
+  getScanNodeByProvider(provider: object): ScanNode;
 }
 
-export interface IScanNode extends IProviderScanNode {
-  context: IScanContext
-  children: IScanNode[]
-  parent: IScanNode | null
+export interface ScanNode extends IProviderScanNode {
+  context: ScanContext;
+  children: ScanNode[];
+  parent: ScanNode | null;
   // eslint-disable-next-line @typescript-eslint/ban-types
-  instance: object | null
+  instance: object | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getConfig(path?: string): any
+  getConfig(path?: string): any;
 }

@@ -2,22 +2,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NameMetadata } from '@augejs/provider-scanner';
-import { ILogger, Logger } from "../logger";
-import { IScanNode } from '../utils';
+import { ILogger, Logger } from '../logger';
+import { ScanNode } from '../utils';
 
 const noopObject = {};
-export function GetLogger(context = ''):PropertyDecorator {
+export function GetLogger(context = ''): PropertyDecorator {
   // eslint-disable-next-line @typescript-eslint/ban-types
   return (target: Object, propertyKey: string | symbol) => {
     const memoizedName = `$memoized_${propertyKey.toString()}`;
     (target as any)[memoizedName] = noopObject;
 
-    const descriptor:PropertyDescriptor = {
-      get():ILogger {
-        const instance:any = this;
+    const descriptor: PropertyDescriptor = {
+      get(): ILogger {
+        const instance: any = this;
         if (instance[memoizedName] === noopObject) {
-          const scanNode:IScanNode = instance.$scanNode;
-          const logger:ILogger = Logger.getLogger(context || NameMetadata.getMetadata(scanNode.provider));
+          const scanNode: ScanNode = instance.$scanNode;
+          const logger: ILogger = Logger.getLogger(
+            context || NameMetadata.getMetadata(scanNode.provider),
+          );
           instance[memoizedName] = logger;
         }
         return instance[memoizedName] as ILogger;
@@ -26,5 +28,5 @@ export function GetLogger(context = ''):PropertyDecorator {
 
     Object.defineProperty(target, propertyKey, descriptor);
     return descriptor;
-  }
+  };
 }

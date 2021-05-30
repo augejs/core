@@ -1,24 +1,24 @@
-import { Logger } from "./Logger"
-import { ILogTransport } from "./Logger.interface";
+import { Logger } from './Logger';
+import { LogTransport } from './Logger.interface';
 import { LogLevel } from './LogLevel';
 
-describe('logger', ()=>{
+describe('logger', () => {
   beforeEach(() => {
     Logger.clear();
     Logger.removeAllTransports();
-  })
+  });
 
-  it('get logger cache the context result', ()=>{
+  it('get logger cache the context result', () => {
     expect(Logger.getLogger('a')).toEqual(Logger.getLogger('a'));
     expect(Logger.getLogger('a')).not.toEqual(Logger.getLogger('b'));
-  })
+  });
 
-  it('add remove Transport', ()=>{
+  it('add remove Transport', () => {
     const fn = jest.fn();
-    const mockLogTransport:ILogTransport = {
+    const mockLogTransport: LogTransport = {
       printMessage() {
         fn();
-      }
+      },
     };
 
     Logger.addTransport(mockLogTransport);
@@ -32,14 +32,14 @@ describe('logger', ()=>{
     Logger.getLogger('a').info('2');
 
     expect(fn).toHaveBeenCalledTimes(1);
-  })
+  });
 
-  it('should execute too many times after add Transport', ()=>{
+  it('should execute too many times after add Transport', () => {
     const fn = jest.fn();
-    const mockLogTransport:ILogTransport = {
+    const mockLogTransport: LogTransport = {
       printMessage() {
         fn();
-      }
+      },
     };
 
     Logger.getLogger('e').info('e-1');
@@ -50,17 +50,15 @@ describe('logger', ()=>{
     Logger.addTransport(mockLogTransport);
     expect(fn).toHaveBeenCalledTimes(3);
 
-
     Logger.removeTransport(mockLogTransport);
-  })
+  });
 
-  it('log level', ()=>{
-
+  it('log level', () => {
     const fn = jest.fn();
-    const mockLogTransport:ILogTransport = {
+    const mockLogTransport: LogTransport = {
       printMessage() {
         fn();
-      }
+      },
     };
 
     Logger.addTransport(mockLogTransport);
@@ -115,5 +113,5 @@ describe('logger', ()=>{
     expect(fn).toHaveBeenCalledTimes(15); // 15 + 5
 
     Logger.removeTransport(mockLogTransport);
-  })
-})
+  });
+});
