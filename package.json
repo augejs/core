@@ -1,6 +1,6 @@
 {
   "name": "@augejs/core",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "`@augejs/core` is a module framework which support using `dependency injection` way to composite kinds of `Modules` and `Providers` to complex application.",
   "main": "dist/main.js",
   "directories": {
@@ -33,6 +33,8 @@
   "homepage": "https://augejs.github.io/docs/",
   "dependencies": {
     "@augejs/provider-scanner": "1.0.7",
+    "@types/extend": "^3.0.1",
+    "@types/object-path": "^0.11.0",
     "extend": "^3.0.2",
     "inversify": "^5.1.1",
     "object-path": "^0.11.5",

@@ -25,7 +25,7 @@ const DefaultLifeCyclePhases = {
   shutdownLifecyclePhase: ['onAppWillClose'],
 };
 
-interface IBootOptions {
+interface BootOptions {
   containerOptions?: Record<string, any>;
   config?: Record<string, any>;
 }
@@ -34,7 +34,7 @@ const logger: ILogger = Logger.getLogger('boot');
 
 export const boot = async (
   appModule: NewableFunction,
-  options?: IBootOptions,
+  options?: BootOptions,
 ): Promise<ScanContext> => {
   if (cluster.isMaster && Cluster.hasMetadata(appModule)) {
     const clusterOptions = Cluster.getMetadata(appModule);
@@ -77,7 +77,7 @@ export const boot = async (
   });
 };
 
-function bootSetupEnv(options?: IBootOptions) {
+function bootSetupEnv(options?: BootOptions) {
   const containerOptions = {
     defaultScope: BindingScopeEnum.Singleton,
     autoBindInjectable: false,
@@ -121,7 +121,7 @@ function bootSetupEnv(options?: IBootOptions) {
   };
 }
 
-function bootLoadConfig(options?: IBootOptions) {
+function bootLoadConfig(options?: BootOptions) {
   return async (context: ScanContext, next: CallableFunction) => {
     await hookUtil.traverseScanNodeHook(
       context.rootScanNode!,
@@ -138,9 +138,8 @@ function bootLoadConfig(options?: IBootOptions) {
           const providerConfigLoader: Function = ConfigLoader.getMetadata(
             scanNode.provider,
           );
-          const providerConfigLoaderConfigResult: any = await providerConfigLoader(
-            scanNode,
-          );
+          const providerConfigLoaderConfigResult: any =
+            await providerConfigLoader(scanNode);
           if (providerConfigLoaderConfigResult !== undefined) {
             objectExtend<object, object>(
               true,
@@ -243,9 +242,8 @@ function scanNodeInstantiation() {
   return async (scanNode: ScanNode, next: CallableFunction) => {
     await next();
     let instance: any = null;
-    const instanceFactory:
-      | CallableFunction
-      | undefined = scanNode.instanceFactory as CallableFunction;
+    const instanceFactory: CallableFunction | undefined =
+      scanNode.instanceFactory as CallableFunction;
     if (instanceFactory) {
       instance = await instanceFactory();
     }
@@ -298,19 +296,15 @@ function bootLifeCyclePhases() {
         }),
       );
 
-      const lifeCyclePhasesHooks: Record<
-        string,
-        CallableFunction
-      > = context.lifeCyclePhasesHooks as Record<string, CallableFunction>;
+      const lifeCyclePhasesHooks: Record<string, CallableFunction> =
+        context.lifeCyclePhasesHooks as Record<string, CallableFunction>;
       lifeCyclePhasesHooks[lifeCyclePhaseName] = async () => {
         await lifeCyclePhaseHook(context, hookUtil.noopNext);
       };
     });
 
-    const lifeCyclePhasesHooks: Record<
-      string,
-      CallableFunction
-    > = context.lifeCyclePhasesHooks as Record<string, CallableFunction>;
+    const lifeCyclePhasesHooks: Record<string, CallableFunction> =
+      context.lifeCyclePhasesHooks as Record<string, CallableFunction>;
     await lifeCyclePhasesHooks.startupLifecyclePhase();
     process.nextTick(async () => {
       try {

@@ -15,7 +15,6 @@ interface ClusterOptions {
   enable?: boolean;
   clusterModule?: NewableFunction;
 }
-
 @Module()
 export class DefaultClusterModule {}
 
