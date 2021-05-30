@@ -1,28 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
-import { ILogTransport, ILogItem, ILogger } from './Logger.interface';
+import { LogTransport, LogItem, ILogger } from './Logger.interface';
 import { LogLevel } from './LogLevel';
 
-const logTransports: ILogTransport[] = [];
-const queueLogItems: ILogItem[] = [];
+const logTransports: LogTransport[] = [];
+const queueLogItems: LogItem[] = [];
 const LogLevelPriority = {
   [LogLevel.VERBOSE]: 0,
   [LogLevel.DEBUG]: 2,
   [LogLevel.INFO]: 4,
   [LogLevel.WARN]: 8,
   [LogLevel.ERROR]: 16,
-}
-const contextLoggerMap:Map<string, ILogger> = new Map();
+};
+const contextLoggerMap: Map<string, ILogger> = new Map();
 
 // utils
 function isLogLevelEnabled(currentLevel: string, allowLevel: string): boolean {
-  const currentLevelPriority:number = LogLevelPriority[currentLevel] || LogLevelPriority[LogLevel.VERBOSE];
-  const allowLevelLevelPriority:number = LogLevelPriority[allowLevel] || LogLevelPriority[LogLevel.VERBOSE];
+  const currentLevelPriority: number =
+    LogLevelPriority[currentLevel] || LogLevelPriority[LogLevel.VERBOSE];
+  const allowLevelLevelPriority: number =
+    LogLevelPriority[allowLevel] || LogLevelPriority[LogLevel.VERBOSE];
   return currentLevelPriority >= allowLevelLevelPriority;
 }
 
-function processQueueLogItems(logItem?:ILogItem) {
+function processQueueLogItems(logItem?: LogItem) {
   if (!Logger.enable) return;
 
   if (logItem) {
@@ -32,8 +34,8 @@ function processQueueLogItems(logItem?:ILogItem) {
 
   if (logTransports.length === 0) return;
 
-  while(queueLogItems.length) {
-    const nextLogItem:ILogItem | undefined = queueLogItems.shift();
+  while (queueLogItems.length) {
+    const nextLogItem: LogItem | undefined = queueLogItems.shift();
     if (nextLogItem) {
       for (const transport of logTransports) {
         transport.printMessage(nextLogItem);
@@ -43,33 +45,32 @@ function processQueueLogItems(logItem?:ILogItem) {
 }
 
 export class Logger implements ILogger {
-
   public static enable = true;
   public static logLevel: string = LogLevel.VERBOSE;
 
-  public static getLogger(context = ''):ILogger {
-    let logger:ILogger | undefined = contextLoggerMap.get(context);
+  public static getLogger(context = ''): ILogger {
+    let logger = contextLoggerMap.get(context);
     if (!logger) {
       logger = new Logger(context);
       contextLoggerMap.set(context, logger);
     }
-    return (logger as ILogger);
+    return logger as ILogger;
   }
 
-  public static addTransport(transport: ILogTransport):void {
+  public static addTransport(transport: LogTransport): void {
     if (logTransports.includes(transport)) return;
     logTransports.push(transport);
 
     processQueueLogItems();
   }
 
-  public static removeTransport(transport: ILogTransport):void {
+  public static removeTransport(transport: LogTransport): void {
     const findIdx = logTransports.indexOf(transport);
     if (findIdx === -1) return;
     logTransports.splice(findIdx, 1);
   }
 
-  public static removeAllTransports():void {
+  public static removeAllTransports(): void {
     logTransports.length = 0;
   }
 
@@ -77,13 +78,13 @@ export class Logger implements ILogger {
     return logTransports.length;
   }
 
-  public static clear():void {
+  public static clear(): void {
     queueLogItems.length = 0;
   }
 
-  private constructor (private readonly context: string = '') {}
+  private constructor(private readonly context: string = '') {}
 
-  error(message: any):void {
+  error(message: any): void {
     processQueueLogItems({
       context: this.context,
       message,
@@ -92,7 +93,7 @@ export class Logger implements ILogger {
     });
   }
 
-  verbose(message: any):void {
+  verbose(message: any): void {
     processQueueLogItems({
       context: this.context,
       message,
@@ -101,7 +102,7 @@ export class Logger implements ILogger {
     });
   }
 
-  debug(message: any):void {
+  debug(message: any): void {
     processQueueLogItems({
       context: this.context,
       message,
@@ -110,7 +111,7 @@ export class Logger implements ILogger {
     });
   }
 
-  info(message: any):void {
+  info(message: any): void {
     processQueueLogItems({
       context: this.context,
       message,
@@ -119,7 +120,7 @@ export class Logger implements ILogger {
     });
   }
 
-  warn(message: any):void {
+  warn(message: any): void {
     processQueueLogItems({
       context: this.context,
       message,

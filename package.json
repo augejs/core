@@ -16,8 +16,6 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "build:apiDoc": "rimraf apiDocs && typedoc --tsconfig ./tsconfig.json --options ./typedoc.config.json && mkdir -p ./apiDocs/docs/assets && cp -r ./docs/assets/* ./apiDocs/docs/assets",
-    "deploy:apiDoc": "npm run build:apiDoc && gh-pages -d apiDocs",
     "prepare": "husky install"
   },
   "files": [
@@ -34,9 +32,7 @@
   },
   "homepage": "https://augejs.github.io/docs/",
   "dependencies": {
-    "@augejs/provider-scanner": "^1.0.6",
-    "@types/extend": "^3.0.1",
-    "@types/object-path": "^0.11.0",
+    "@augejs/provider-scanner": "1.0.7",
     "extend": "^3.0.2",
     "inversify": "^5.1.1",
     "object-path": "^0.11.5",
@@ -46,7 +42,9 @@
   "devDependencies": {
     "@commitlint/cli": "^12.1.1",
     "@commitlint/config-conventional": "^12.1.1",
+    "@types/extend": "^3.0.1",
     "@types/jest": "^26.0.22",
+    "@types/object-path": "^0.11.0",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
     "commitlint": "^12.1.1",
@@ -62,7 +60,6 @@
     "ts-jest": "^27.0.1",
     "ts-node": "^10.0.0",
     "tslib": "^2.2.0",
-    "typedoc": "^0.20.36",
     "typescript": "^4.3.2"
   },
   "engines": {
