@@ -12,8 +12,8 @@
     "changelog": "standard-changelog",
     "deploy": "npm run build && npm publish --access public",
     "lint": "eslint src --ext .ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "jest --coverage",
+    "test:dev": "jest --coverage --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "prepare": "husky install"

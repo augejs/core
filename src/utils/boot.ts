@@ -30,7 +30,7 @@ interface BootOptions {
   config?: Record<string, any>;
 }
 
-const logger: ILogger = Logger.getLogger('boot');
+const logger = Logger.getLogger('boot');
 
 export const boot = async (
   appModule: NewableFunction,
