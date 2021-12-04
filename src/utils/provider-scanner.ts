@@ -1,6 +1,5 @@
 import { Container } from '../ioc';
 import {
-
   ScanContext as ProviderScanContext,
   ScanNode as ProviderScanNode,
 } from '@augejs/provider-scanner';

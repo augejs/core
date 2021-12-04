@@ -52,3 +52,11 @@ export function LifecycleOnAppWillCloseHook(
 ): ClassDecorator {
   return LifecycleHook('onAppWillClose', hooks);
 }
+
+export interface LifecycleComponent {
+  onInit?() :void | Promise<void>
+  onAppWillReady?() :void | Promise<void>
+  onAppDidReady?() :void | Promise<void>
+  __onAppReady__?(): void | Promise<void>
+  onAppWillClose?() :void | Promise<void>
+}

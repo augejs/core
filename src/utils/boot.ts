@@ -15,13 +15,11 @@ import { getConfigAccessPath } from './config.util';
 import { objectPath, objectExtend } from './object.util';
 import { BindingScopeEnum, Container } from '../ioc';
 import { Cluster, Config, ConfigLoader, Tag } from '../decorators';
-import { ILogger, Logger, ConsoleLogTransport } from '../logger';
+import { Logger, ConsoleLogTransport } from '../logger';
 
 const DefaultLifeCyclePhases = {
   startupLifecyclePhase: ['onInit', 'onAppWillReady', '__onAppReady__'],
-
   readyLifecyclePhase: ['onAppDidReady'],
-
   shutdownLifecyclePhase: ['onAppWillClose'],
 };
 
@@ -39,8 +37,7 @@ export const boot = async (
   if (cluster.isMaster && Cluster.hasMetadata(appModule)) {
     const clusterOptions = Cluster.getMetadata(appModule);
     if (clusterOptions.enable) {
-      const clusterModule =
-        clusterOptions.clusterModule || Cluster.DefaultClusterModule;
+      const clusterModule = clusterOptions.clusterModule || Cluster.DefaultClusterModule;
       Metadata.decorate(
         [
           Cluster.ClusterMasterClassDecorator({
